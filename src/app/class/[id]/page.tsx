@@ -47,6 +47,8 @@ export default function ClassPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const studentsPerPage = 10;
 
   const [form, setForm] = useState({
     studentNameEn: "",
@@ -94,6 +96,13 @@ export default function ClassPage() {
       String(s.roll).includes(q)
     );
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * studentsPerPage,
+    currentPage * studentsPerPage
+  );
 
   const resetForm = () => {
     setForm({
@@ -291,7 +300,7 @@ export default function ClassPage() {
             </label>
             <select
               value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              onChange={(e) => { setSelectedYear(Number(e.target.value)); setCurrentPage(1); }}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
               {years.map((y) => (
@@ -676,7 +685,7 @@ export default function ClassPage() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 placeholder="Search by name, roll, phone, or father's name..."
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white shadow-sm"
               />
@@ -751,10 +760,11 @@ export default function ClassPage() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {filteredStudents.map((student) => (
-                <div
+              {paginatedStudents.map((student) => (
+                <Link
                   key={student.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow"
+                  href={`/student/${student.id}`}
+                  className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
                     {/* Roll Number Badge */}
@@ -793,17 +803,14 @@ export default function ClassPage() {
                           </span>
                         )}
                       </div>
-                      <Link
-                        href={`/student/${student.id}`}
-                        className="text-base font-semibold text-gray-800 hover:text-blue-600 transition-colors mt-0.5 block"
-                      >
+                      <span className="text-base font-semibold text-gray-800 mt-0.5 block">
                         {student.studentNameEn}
                         {student.studentNameBn && (
                           <span className="text-gray-400 font-normal ml-2 text-sm">
                             ({student.studentNameBn})
                           </span>
                         )}
-                      </Link>
+                      </span>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-500">
                         <span>Father: {student.fatherName}</span>
                         <span>Phone: {student.phone}</span>
@@ -812,33 +819,11 @@ export default function ClassPage() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 shrink-0">
-                      <Link
-                        href={`/student/${student.id}`}
-                        className="w-9 h-9 bg-gray-100 hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors group"
-                        title="View Details"
-                      >
-                        <svg
-                          className="w-4 h-4 text-gray-500 group-hover:text-blue-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                      </Link>
                       <button
-                        onClick={() => handleEdit(student)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleEdit(student);
+                        }}
                         className="w-9 h-9 bg-gray-100 hover:bg-emerald-100 rounded-lg flex items-center justify-center transition-colors group"
                         title="Edit"
                       >
@@ -857,7 +842,10 @@ export default function ClassPage() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDelete(student.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDelete(student.id);
+                        }}
                         className="w-9 h-9 bg-gray-100 hover:bg-red-100 rounded-lg flex items-center justify-center transition-colors group"
                         title="Delete"
                       >
@@ -877,8 +865,45 @@ export default function ClassPage() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === page
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>
