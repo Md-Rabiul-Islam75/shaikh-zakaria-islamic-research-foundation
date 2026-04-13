@@ -206,6 +206,73 @@ const swaggerSpec = {
         },
       },
     },
+    "/api/promote": {
+      post: {
+        summary: "Promote students to next class",
+        description:
+          "Promotes selected students from one class to the next. Saves current class info to history and updates the student record.",
+        tags: ["Promotion"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: [
+                  "students",
+                  "fromClass",
+                  "fromSession",
+                  "toClass",
+                  "toSession",
+                ],
+                properties: {
+                  students: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string" },
+                        newRoll: { type: "integer" },
+                      },
+                    },
+                  },
+                  fromClass: { type: "integer", example: 1 },
+                  fromSession: { type: "integer", example: 2026 },
+                  toClass: { type: "integer", example: 2 },
+                  toSession: { type: "integer", example: 2027 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Students promoted successfully",
+          },
+        },
+      },
+    },
+    "/api/students/history/{id}": {
+      get: {
+        summary: "Get student class history",
+        description: "Retrieve the promotion history of a student.",
+        tags: ["Students"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            description: "Student ID",
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "List of class history records",
+          },
+        },
+      },
+    },
   },
   components: {
     schemas: {

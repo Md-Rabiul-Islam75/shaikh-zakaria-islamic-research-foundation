@@ -48,7 +48,11 @@ export default function ClassPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const studentsPerPage = 10;
+  const studentsPerPage = 20;
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+  const [promotionRolls, setPromotionRolls] = useState<Record<string, number>>({});
+  const [promoting, setPromoting] = useState(false);
 
   const [form, setForm] = useState({
     studentNameEn: "",
@@ -181,6 +185,107 @@ export default function ClassPage() {
       fetchStudents();
     } else {
       Swal.fire("Error!", "Failed to delete student.", "error");
+    }
+  };
+
+  const openPromoteModal = () => {
+    if (filteredStudents.length === 0) {
+      Swal.fire("No Students", "There are no students to promote.", "info");
+      return;
+    }
+    if (classId >= 10) {
+      Swal.fire("Cannot Promote", "Class 10 students cannot be promoted further.", "info");
+      return;
+    }
+    const allIds = new Set(filteredStudents.map((s) => s.id));
+    setSelectedStudents(allIds);
+    // Auto-assign rolls 1, 2, 3... based on current order
+    const rolls: Record<string, number> = {};
+    filteredStudents.forEach((s, i) => {
+      rolls[s.id] = i + 1;
+    });
+    setPromotionRolls(rolls);
+    setShowPromoteModal(true);
+  };
+
+  const toggleStudentSelection = (id: string) => {
+    setSelectedStudents((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedStudents.size === filteredStudents.length) {
+      setSelectedStudents(new Set());
+    } else {
+      setSelectedStudents(new Set(filteredStudents.map((s) => s.id)));
+    }
+  };
+
+  const handlePromote = async () => {
+    if (selectedStudents.size === 0) {
+      Swal.fire("No Selection", "Please select at least one student to promote.", "warning");
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: `Promote ${selectedStudents.size} Students?`,
+      html: `
+        <p class="text-gray-600">
+          <strong>From:</strong> Class ${classId}, Session ${selectedYear}<br/>
+          <strong>To:</strong> Class ${classId + 1}, Session ${selectedYear + 1}
+        </p>
+        <p class="text-sm text-gray-500 mt-2">This will save their current class history and move them to the next class.</p>
+      `,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#2563eb",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Promote!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    setPromoting(true);
+
+    const studentsToPromote = Array.from(selectedStudents).map((id) => ({
+      id,
+      newRoll: promotionRolls[id] || 1,
+    }));
+
+    const res = await fetch("/api/promote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        students: studentsToPromote,
+        fromClass: classId,
+        fromSession: selectedYear,
+        toClass: classId + 1,
+        toSession: selectedYear + 1,
+      }),
+    });
+
+    setPromoting(false);
+
+    if (res.ok) {
+      const data = await res.json();
+      await Swal.fire({
+        title: "Promoted!",
+        text: data.message,
+        icon: "success",
+        timer: 2500,
+        showConfirmButton: false,
+      });
+      setShowPromoteModal(false);
+      setSelectedStudents(new Set());
+      setPromotionRolls({});
+      fetchStudents();
+    } else {
+      Swal.fire("Error!", "Failed to promote students.", "error");
     }
   };
 
@@ -332,6 +437,27 @@ export default function ClassPage() {
             </svg>
             {showForm ? "Close Form" : "Add Student"}
           </button>
+          {classId < 10 && (
+            <button
+              onClick={openPromoteModal}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+              Promote
+            </button>
+          )}
         </div>
       </div>
 
@@ -759,7 +885,7 @@ export default function ClassPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {paginatedStudents.map((student) => (
                 <Link
                   key={student.id}
@@ -908,6 +1034,129 @@ export default function ClassPage() {
           )}
         </div>
       </div>
+
+      {/* Promote Students Modal */}
+      {showPromoteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-emerald-600 text-white px-6 py-5 rounded-t-2xl">
+              <h2 className="text-xl font-bold">Promote Students</h2>
+              <p className="text-emerald-100 text-sm mt-1">
+                Class {classId} ({selectedYear}) → Class {classId + 1} ({selectedYear + 1})
+              </p>
+            </div>
+
+            {/* Select All / Info Bar */}
+            <div className="px-6 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedStudents.size === filteredStudents.length}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Select All
+                </span>
+              </label>
+              <span className="text-sm text-gray-500">
+                {selectedStudents.size} of {filteredStudents.length} selected
+              </span>
+            </div>
+
+            {/* Student List */}
+            <div className="overflow-y-auto flex-1 px-6 py-3">
+              {filteredStudents.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No students to promote.</p>
+              ) : (
+                <div className="space-y-2">
+                  {filteredStudents.map((student) => (
+                    <div
+                      key={student.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                        selectedStudents.has(student.id)
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-gray-200 bg-white opacity-60"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedStudents.has(student.id)}
+                        onChange={() => toggleStudentSelection(student.id)}
+                        className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 shrink-0"
+                      />
+                      {/* Current Roll */}
+                      <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-white">{student.roll}</span>
+                      </div>
+                      {/* Name */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {student.studentNameEn}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Current Roll: {student.roll}
+                        </p>
+                      </div>
+                      {/* New Roll Input */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <label className="text-xs text-gray-500">New Roll:</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={promotionRolls[student.id] || ""}
+                          onChange={(e) =>
+                            setPromotionRolls((prev) => ({
+                              ...prev,
+                              [student.id]: parseInt(e.target.value) || 1,
+                            }))
+                          }
+                          disabled={!selectedStudents.has(student.id)}
+                          className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center font-bold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:opacity-40"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => {
+                  setShowPromoteModal(false);
+                  setSelectedStudents(new Set());
+                  setPromotionRolls({});
+                }}
+                className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePromote}
+                disabled={promoting || selectedStudents.size === 0}
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+              >
+                {promoting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Promoting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    Promote {selectedStudents.size} Student{selectedStudents.size !== 1 ? "s" : ""}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

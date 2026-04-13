@@ -5,6 +5,16 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
+interface ClassHistory {
+  id: string;
+  className: number;
+  session: number;
+  roll: number;
+  section: string | null;
+  result: string;
+  createdAt: string;
+}
+
 interface Student {
   id: string;
   studentNameEn: string;
@@ -34,18 +44,24 @@ export default function StudentDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const [student, setStudent] = useState<Student | null>(null);
+  const [history, setHistory] = useState<ClassHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStudent = async () => {
-      const res = await fetch(`/api/students/${params.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setStudent(data);
+    const fetchData = async () => {
+      const [studentRes, historyRes] = await Promise.all([
+        fetch(`/api/students/${params.id}`),
+        fetch(`/api/students/history/${params.id}`),
+      ]);
+      if (studentRes.ok) {
+        setStudent(await studentRes.json());
+      }
+      if (historyRes.ok) {
+        setHistory(await historyRes.json());
       }
       setLoading(false);
     };
-    fetchStudent();
+    fetchData();
   }, [params.id]);
 
   if (loading) {
@@ -314,6 +330,91 @@ export default function StudentDetailsPage() {
               </div>
             </div>
           </div>
+
+          {/* Class History Timeline */}
+          {history.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <svg
+                  className="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Promotion History
+              </h2>
+              <div className="relative">
+                {/* Timeline line */}
+                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-blue-200"></div>
+
+                <div className="space-y-4">
+                  {history.map((h, index) => (
+                    <div key={h.id} className="relative flex items-start gap-4 pl-2">
+                      {/* Timeline dot */}
+                      <div className="w-9 h-9 rounded-full bg-blue-100 border-2 border-blue-500 flex items-center justify-center z-10 shrink-0">
+                        <span className="text-xs font-bold text-blue-700">{h.className}</span>
+                      </div>
+                      {/* Content */}
+                      <div className="bg-gray-50 rounded-xl p-4 flex-1 border border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-gray-800">
+                            Class {h.className}
+                          </h3>
+                          <span className="text-xs font-medium bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                            {h.result}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-500">
+                          <span>Session: {h.session}</span>
+                          <span>Roll: {h.roll}</span>
+                          {h.section && <span>Section: {h.section}</span>}
+                        </div>
+                        {index < history.length - 1 && (
+                          <p className="text-xs text-gray-400 mt-2">
+                            Promoted to Class {history[index + 1].className} in {history[index + 1].session}
+                          </p>
+                        )}
+                        {index === history.length - 1 && (
+                          <p className="text-xs text-gray-400 mt-2">
+                            Promoted to Class {student.className} in {student.admissionYear}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Current class (always shown at the end) */}
+                  <div className="relative flex items-start gap-4 pl-2">
+                    <div className="w-9 h-9 rounded-full bg-blue-600 border-2 border-blue-600 flex items-center justify-center z-10 shrink-0">
+                      <span className="text-xs font-bold text-white">{student.className}</span>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-4 flex-1 border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-blue-800">
+                          Class {student.className}
+                        </h3>
+                        <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                          Current
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-blue-600">
+                        <span>Session: {student.admissionYear}</span>
+                        <span>Roll: {student.roll}</span>
+                        {student.section && <span>Section: {student.section}</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Student ID */}
           <div className="mt-6 pt-6 border-t border-gray-100">
