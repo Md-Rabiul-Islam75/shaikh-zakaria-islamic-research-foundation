@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Student {
+  id                String   @id @default(cuid())
+  studentNameEn     String
+  studentNameBn     String?
+  fatherName        String
+  motherName        String
+  dateOfBirth       DateTime
+  gender            String
+  religion          String
+  nationality       String   @default("Bangladeshi")
+  bloodGroup        String?
+  birthCertificateNo String?
+  phone             String
+  presentAddress    String
+  permanentAddress  String?
+  roll              Int      @default(0)
+  className         Int
+  section           String?
+  admissionYear     Int
+  admissionFee      String   @default("Free")
+  previousSchool    String?
+  imageUrl          String?
+  imagePublicId     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([className, admissionYear])
+}
