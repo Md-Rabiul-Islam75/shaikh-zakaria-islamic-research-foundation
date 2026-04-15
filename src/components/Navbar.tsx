@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/auth";
+import LogoutButton from "./LogoutButton";
 
-export default function Navbar() {
+export default async function Navbar() {
+  const user = await getCurrentUser();
+
   return (
     <header>
       <nav className="bg-blue-700 shadow-lg">
@@ -26,13 +30,43 @@ export default function Navbar() {
                 Student Management
               </span>
             </Link>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="text-blue-100 hover:text-white transition-colors font-medium"
+                className="text-blue-100 hover:text-white transition-colors font-medium text-sm"
               >
                 Home
               </Link>
+              {user ? (
+                <>
+                  <div className="hidden sm:flex items-center gap-2 bg-blue-800 px-3 py-1.5 rounded-full">
+                    <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
+                      <span className="text-blue-700 font-bold text-sm">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="text-white text-sm font-medium">
+                      {user.name}
+                    </span>
+                  </div>
+                  <LogoutButton />
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="text-blue-100 hover:text-white transition-colors font-medium text-sm"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="bg-white text-blue-700 hover:bg-blue-50 font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
