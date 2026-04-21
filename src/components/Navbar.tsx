@@ -7,8 +7,8 @@ export default async function Navbar() {
   const user = await getCurrentUser();
 
   return (
-    <header>
-      <nav className="bg-blue-700 shadow-lg">
+    <>
+      <nav className="bg-blue-700 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
@@ -78,6 +78,6 @@ export default async function Navbar() {
           &quot;জ্ঞান অর্জন প্রত্যেক মুসলিম নর-নারীর উপর ফরজ।&quot; — হাদীস (ইবনে মাজাহ)
         </div>
       </div>
-    </header>
+    </>
   );
 }

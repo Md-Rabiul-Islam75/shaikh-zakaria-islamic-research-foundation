@@ -66,6 +66,15 @@ export default function ClassStudentsClient({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // Promote modal state
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [allClasses, setAllClasses] = useState<{ id: string; nameEn: string; nameBn: string; order: number }[]>([]);
+  const [promoteTargetClassId, setPromoteTargetClassId] = useState<string>("");
+  const [promoteTargetSession, setPromoteTargetSession] = useState<number>(selectedYear + 1);
+  const [selectedForPromotion, setSelectedForPromotion] = useState<Set<string>>(new Set());
+  const [promotionRolls, setPromotionRolls] = useState<Record<string, number>>({});
+  const [promoting, setPromoting] = useState(false);
+
   const [form, setForm] = useState({
     studentNameEn: "",
     studentNameBn: "",
@@ -204,6 +213,128 @@ export default function ClassStudentsClient({
     } else {
       const data = await res.json();
       toast.error("Delete failed", data.error || "Please try again");
+    }
+  };
+
+  const openPromoteModal = async () => {
+    if (!canModify) {
+      toast.warning("Not allowed", "Only teachers and admins can promote students.");
+      return;
+    }
+    if (filteredStudents.length === 0) {
+      toast.info("No students", "There are no students to promote.");
+      return;
+    }
+
+    // Fetch all classes for the target selector
+    const res = await fetch("/api/classes");
+    if (res.ok) {
+      const classes = await res.json();
+      setAllClasses(classes);
+      // Default target: next class by order
+      const current = classes.find((c: { id: string }) => c.id === classInfo.id);
+      const nextClass = classes.find(
+        (c: { order: number }) => c.order === (current?.order ?? 0) + 1
+      );
+      setPromoteTargetClassId(nextClass?.id || "");
+    }
+
+    setPromoteTargetSession(selectedYear + 1);
+    const ids = new Set(filteredStudents.map((s) => s.id));
+    setSelectedForPromotion(ids);
+    const rolls: Record<string, number> = {};
+    filteredStudents.forEach((s, i) => {
+      rolls[s.id] = i + 1;
+    });
+    setPromotionRolls(rolls);
+    setShowPromoteModal(true);
+  };
+
+  const togglePromoteSelection = (id: string) => {
+    setSelectedForPromotion((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const togglePromoteSelectAll = () => {
+    if (selectedForPromotion.size === filteredStudents.length) {
+      setSelectedForPromotion(new Set());
+    } else {
+      setSelectedForPromotion(new Set(filteredStudents.map((s) => s.id)));
+    }
+  };
+
+  const handlePromote = async () => {
+    if (selectedForPromotion.size === 0) {
+      toast.warning("No selection", "Please select at least one student.");
+      return;
+    }
+    if (!promoteTargetClassId) {
+      toast.warning("No target class", "Please select the target class.");
+      return;
+    }
+
+    const targetClass = allClasses.find((c) => c.id === promoteTargetClassId);
+
+    const result = await Swal.fire({
+      title: `Promote ${selectedForPromotion.size} student(s)?`,
+      html: `
+        <p class="text-gray-600 text-sm">
+          <strong>From:</strong> ${classInfo.nameEn} (Session ${selectedYear})<br/>
+          <strong>To:</strong> ${targetClass?.nameEn || "—"} (Session ${promoteTargetSession})
+        </p>
+        <p class="text-xs text-gray-500 mt-3">
+          This will save their current class info to history and move them to the target class.
+        </p>
+      `,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Promote",
+      confirmButtonColor: "#059669",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!result.isConfirmed) return;
+
+    setPromoting(true);
+
+    const studentsToPromote = Array.from(selectedForPromotion).map((id) => ({
+      id,
+      newRoll: promotionRolls[id] || 1,
+    }));
+
+    try {
+      const res = await fetch("/api/promote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          students: studentsToPromote,
+          fromClassId: classInfo.id,
+          fromSession: selectedYear,
+          toClassId: promoteTargetClassId,
+          toSession: promoteTargetSession,
+        }),
+      });
+
+      setPromoting(false);
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success("Promoted!", data.message);
+        setShowPromoteModal(false);
+        setSelectedForPromotion(new Set());
+        setPromotionRolls({});
+        fetchStudents();
+      } else {
+        const data = await res.json();
+        toast.error("Promotion failed", data.error || "Please try again");
+      }
+    } catch {
+      setPromoting(false);
+      toast.error("Network error", "Please check your connection.");
     }
   };
 
@@ -381,6 +512,18 @@ export default function ClassStudentsClient({
             </svg>
             {showForm ? "Close Form" : "Add Student"}
           </button>
+
+          {canModify && (
+            <button
+              onClick={openPromoteModal}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+              Promote
+            </button>
+          )}
         </div>
       </div>
 
@@ -797,6 +940,178 @@ export default function ClassStudentsClient({
           )}
         </div>
       </div>
+
+      {/* Promote Modal */}
+      {showPromoteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="bg-emerald-600 text-white px-6 py-5 rounded-t-2xl flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold">Promote Students</h2>
+                <p className="text-emerald-100 text-sm mt-1">
+                  From <strong>{classInfo.nameEn}</strong> (Session {selectedYear})
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPromoteModal(false)}
+                className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Target Selector */}
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Target Class *
+                  </label>
+                  <select
+                    value={promoteTargetClassId}
+                    onChange={(e) => setPromoteTargetClassId(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    <option value="">Select target class</option>
+                    {allClasses
+                      .filter((c) => c.id !== classInfo.id)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nameEn} ({c.nameBn})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Target Session *
+                  </label>
+                  <select
+                    value={promoteTargetSession}
+                    onChange={(e) => setPromoteTargetSession(Number(e.target.value))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    {years.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Select All */}
+            <div className="px-6 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={
+                    selectedForPromotion.size === filteredStudents.length &&
+                    filteredStudents.length > 0
+                  }
+                  onChange={togglePromoteSelectAll}
+                  className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Select All</span>
+              </label>
+              <span className="text-sm text-gray-500">
+                {selectedForPromotion.size} of {filteredStudents.length} selected
+              </span>
+            </div>
+
+            {/* Student list */}
+            <div className="overflow-y-auto flex-1 px-6 py-3">
+              {filteredStudents.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">
+                  No students to promote.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {filteredStudents.map((student) => (
+                    <div
+                      key={student.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                        selectedForPromotion.has(student.id)
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-gray-200 bg-white opacity-60"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedForPromotion.has(student.id)}
+                        onChange={() => togglePromoteSelection(student.id)}
+                        className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 shrink-0"
+                      />
+                      <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-white">
+                          {student.roll}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {student.studentNameEn}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Current Roll: {student.roll}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <label className="text-xs text-gray-500">New Roll:</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={promotionRolls[student.id] || ""}
+                          onChange={(e) =>
+                            setPromotionRolls((prev) => ({
+                              ...prev,
+                              [student.id]: parseInt(e.target.value) || 1,
+                            }))
+                          }
+                          disabled={!selectedForPromotion.has(student.id)}
+                          className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center font-bold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:opacity-40"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer actions */}
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => setShowPromoteModal(false)}
+                className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePromote}
+                disabled={promoting || selectedForPromotion.size === 0}
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+              >
+                {promoting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Promoting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    Promote {selectedForPromotion.size} student{selectedForPromotion.size !== 1 ? "s" : ""}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

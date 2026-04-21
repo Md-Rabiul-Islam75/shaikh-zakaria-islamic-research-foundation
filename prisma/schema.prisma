@@ -8,14 +8,28 @@ datasource db {
 }
 
 model User {
-  id                  String   @id @default(cuid())
+  id                  String    @id @default(cuid())
   name                String
-  phone               String   @unique
+  phone               String    @unique
   password            String
-  role                String   @default("student") // student | teacher | admin
-  responsibleClasses  String?  // JSON array of class names (for teachers)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  role                String    @default("student") // student | teacher | admin
+
+  // Teacher-specific profile (all optional — filled from Teacher Portal)
+  imageUrl            String?
+  imagePublicId       String?
+  designation         String?   // e.g., Head Teacher, Senior Teacher
+  qualification       String?   // e.g., Dawra-e-Hadith, Kamil
+  subject             String?   // e.g., Arabic, Quran, Tafsir
+  gender              String?
+  dateOfBirth         DateTime?
+  address             String?
+  nidNumber           String?
+  joiningDate         DateTime?
+  bio                 String?   // short bio
+  responsibleClasses  String?   // JSON string array of class IDs
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model Class {
