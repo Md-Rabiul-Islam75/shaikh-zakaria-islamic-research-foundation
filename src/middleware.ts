@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 
-const STUDENT_PORTAL = ["/student-portal", "/class", "/student"];
+const STUDENT_PORTAL = ["/student-portal", "/student"];
 const TEACHER_PORTAL = ["/teacher-portal", "/teachers"];
 const ADMIN_PORTAL = ["/admin-portal", "/admin"];
 const AUTH_PATHS = ["/login", "/register"];
@@ -51,7 +51,6 @@ export const config = {
     "/student-portal/:path*",
     "/teacher-portal/:path*",
     "/admin-portal/:path*",
-    "/class/:path*",
     "/student/:path*",
     "/teachers/:path*",
     "/admin/:path*",

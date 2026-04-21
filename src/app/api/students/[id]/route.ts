@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import cloudinary from "@/lib/cloudinary";
+import { getCurrentUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -7,7 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const student = await prisma.student.findUnique({ where: { id } });
+  const student = await prisma.student.findUnique({
+    where: { id },
+    include: { class: true },
+  });
 
   if (!student) {
     return NextResponse.json({ error: "Student not found" }, { status: 404 });
@@ -20,6 +24,19 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  // Only teachers and admins can edit students
+  if (user.role === "student") {
+    return NextResponse.json(
+      { error: "Students cannot edit student records. Only teachers and admins can." },
+      { status: 403 }
+    );
+  }
+
   const { id } = await params;
   const body = await request.json();
 
@@ -38,7 +55,7 @@ export async function PUT(
   if (body.presentAddress !== undefined) data.presentAddress = body.presentAddress;
   if (body.permanentAddress !== undefined) data.permanentAddress = body.permanentAddress;
   if (body.roll !== undefined) data.roll = parseInt(body.roll);
-  if (body.className !== undefined) data.className = parseInt(body.className);
+  if (body.classId !== undefined) data.classId = body.classId;
   if (body.section !== undefined) data.section = body.section;
   if (body.admissionYear !== undefined) data.admissionYear = parseInt(body.admissionYear);
   if (body.admissionFee !== undefined) data.admissionFee = body.admissionFee;
@@ -58,6 +75,18 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  if (user.role === "student") {
+    return NextResponse.json(
+      { error: "Students cannot delete student records. Only teachers and admins can." },
+      { status: 403 }
+    );
+  }
+
   const { id } = await params;
 
   const student = await prisma.student.findUnique({ where: { id } });
@@ -65,12 +94,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Student not found" }, { status: 404 });
   }
 
-  // Delete image from Cloudinary if exists
   if (student.imagePublicId) {
     try {
       await cloudinary.uploader.destroy(student.imagePublicId);
     } catch {
-      // Continue with deletion even if image cleanup fails
+      // ignore cloudinary cleanup errors
     }
   }
 

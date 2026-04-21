@@ -1,36 +1,60 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const className = searchParams.get("class");
+  const classId = searchParams.get("classId");
   const year = searchParams.get("year");
 
   const where: Record<string, unknown> = {};
-  if (className) where.className = parseInt(className);
+  if (classId) where.classId = classId;
   if (year) where.admissionYear = parseInt(year);
 
   const students = await prisma.student.findMany({
     where,
-    orderBy: { createdAt: "asc" },
+    orderBy: { roll: "asc" },
+    include: { class: { select: { nameEn: true, nameBn: true } } },
   });
 
   return NextResponse.json(students);
 }
 
 export async function POST(request: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   const body = await request.json();
+
+  if (!body.classId) {
+    return NextResponse.json(
+      { error: "classId is required" },
+      { status: 400 }
+    );
+  }
+
+  // Verify class exists
+  const targetClass = await prisma.class.findUnique({
+    where: { id: body.classId },
+  });
+  if (!targetClass) {
+    return NextResponse.json({ error: "Class not found" }, { status: 404 });
+  }
 
   // Auto-assign roll: find the highest roll in this class+year, then +1
   const lastStudent = await prisma.student.findFirst({
     where: {
-      className: parseInt(body.className),
+      classId: body.classId,
       admissionYear: parseInt(body.admissionYear),
     },
     orderBy: { roll: "desc" },
     select: { roll: true },
   });
-  const nextRoll = (lastStudent?.roll ?? 0) + 1;
+  const nextRoll = body.roll
+    ? parseInt(body.roll)
+    : (lastStudent?.roll ?? 0) + 1;
 
   const student = await prisma.student.create({
     data: {
@@ -48,13 +72,14 @@ export async function POST(request: NextRequest) {
       presentAddress: body.presentAddress,
       permanentAddress: body.permanentAddress || null,
       roll: nextRoll,
-      className: parseInt(body.className),
+      classId: body.classId,
       section: body.section || null,
       admissionYear: parseInt(body.admissionYear),
       admissionFee: body.admissionFee || "Free",
       previousSchool: body.previousSchool || null,
       imageUrl: body.imageUrl || null,
       imagePublicId: body.imagePublicId || null,
+      createdById: user.id,
     },
   });
 

@@ -1,27 +1,32 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  if (user.role === "student") {
+    return NextResponse.json(
+      { error: "Students cannot promote. Only teachers and admins can." },
+      { status: 403 }
+    );
+  }
+
   const body = await request.json();
-
-  // body = {
-  //   students: [{ id, newRoll }],
-  //   fromClass, fromSession,
-  //   toClass, toSession,
-  //   result (default: "Promoted")
-  // }
-
   const {
     students,
-    fromClass,
+    fromClassId,
     fromSession,
-    toClass,
+    toClassId,
     toSession,
   }: {
     students: { id: string; newRoll: number }[];
-    fromClass: number;
+    fromClassId: string;
     fromSession: number;
-    toClass: number;
+    toClassId: string;
     toSession: number;
   } = body;
 
@@ -32,18 +37,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Process each student in a transaction
+  // Get "from" class name for history snapshot
+  const fromClass = await prisma.class.findUnique({ where: { id: fromClassId } });
+  const toClass = await prisma.class.findUnique({ where: { id: toClassId } });
+  if (!fromClass || !toClass) {
+    return NextResponse.json({ error: "Class not found" }, { status: 404 });
+  }
+
   await prisma.$transaction(async (tx) => {
     for (const s of students) {
-      // Get current student data
       const student = await tx.student.findUnique({ where: { id: s.id } });
       if (!student) continue;
 
-      // Save current class info to history
+      // Save history snapshot with class name (not id)
       await tx.classHistory.create({
         data: {
           studentId: student.id,
-          className: fromClass,
+          classNameEn: fromClass.nameEn,
+          classNameBn: fromClass.nameBn,
           session: fromSession,
           roll: student.roll,
           section: student.section,
@@ -51,11 +62,10 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Update student to new class
       await tx.student.update({
         where: { id: s.id },
         data: {
-          className: toClass,
+          classId: toClassId,
           admissionYear: toSession,
           roll: s.newRoll,
           section: null,
@@ -65,7 +75,7 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json({
-    message: `${students.length} student(s) promoted from Class ${fromClass} to Class ${toClass}`,
+    message: `${students.length} student(s) promoted from ${fromClass.nameEn} to ${toClass.nameEn}`,
     promoted: students.length,
   });
 }

@@ -19,14 +19,16 @@ model User {
 }
 
 model Class {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   nameEn      String
   nameBn      String
   description String?
-  order       Int      @default(0)
+  order       Int       @default(0)
   createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  students    Student[]
 
   @@index([order])
 }
@@ -47,32 +49,35 @@ model Student {
   presentAddress     String
   permanentAddress   String?
   roll               Int            @default(0)
-  className          Int
+  classId            String
+  class              Class          @relation(fields: [classId], references: [id])
   section            String?
   admissionYear      Int
   admissionFee       String         @default("Free")
   previousSchool     String?
   imageUrl           String?
   imagePublicId      String?
+  createdById        String?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
   classHistory       ClassHistory[]
 
-  @@index([className, admissionYear])
+  @@index([classId, admissionYear])
 }
 
 model ClassHistory {
-  id        String   @id @default(cuid())
-  studentId String
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  className Int
-  session   Int
-  roll      Int
-  section   String?
-  result    String   @default("Promoted")
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classNameEn String
+  classNameBn String?
+  session    Int
+  roll       Int
+  section    String?
+  result     String   @default("Promoted")
+  createdAt  DateTime @default(now())
 
   @@index([studentId])
-  @@index([className, session])
+  @@index([session])
 }

@@ -155,9 +155,38 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Portals (Logged In) OR Steps (Logged Out) */}
-      {user ? (
-        <section id="portals" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      {/* How It Works — always visible */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">How It Works</h2>
+          <p className="text-gray-500 max-w-xl mx-auto">
+            Follow these simple steps to manage your Madrasa efficiently
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {steps.map((step) => (
+            <div
+              key={step.number}
+              className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-100 text-center group"
+            >
+              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                {step.icon}
+              </div>
+              <span className="text-xs font-bold text-blue-500 tracking-widest uppercase">
+                Step {step.number}
+              </span>
+              <h3 className="text-lg font-semibold text-gray-800 mt-2 mb-2">
+                {step.title}
+              </h3>
+              <p className="text-sm text-gray-500">{step.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Portals (Logged In users only) */}
+      {user && (
+        <section id="portals" className="bg-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <div className="inline-block bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-3">
               Welcome, {user.name}
@@ -197,34 +226,6 @@ export default async function Home() {
                   </div>
                 </div>
               </Link>
-            ))}
-          </div>
-        </section>
-      ) : (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-3">How It Works</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">
-              Follow these simple steps to get started
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {steps.map((step) => (
-              <div
-                key={step.number}
-                className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-100 text-center group"
-              >
-                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  {step.icon}
-                </div>
-                <span className="text-xs font-bold text-blue-500 tracking-widest uppercase">
-                  Step {step.number}
-                </span>
-                <h3 className="text-lg font-semibold text-gray-800 mt-2 mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-sm text-gray-500">{step.description}</p>
-              </div>
             ))}
           </div>
         </section>

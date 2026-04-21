@@ -7,12 +7,19 @@ import Link from "next/link";
 
 interface ClassHistory {
   id: string;
-  className: number;
+  classNameEn: string;
+  classNameBn: string | null;
   session: number;
   roll: number;
   section: string | null;
   result: string;
   createdAt: string;
+}
+
+interface ClassInfo {
+  id: string;
+  nameEn: string;
+  nameBn: string;
 }
 
 interface Student {
@@ -31,7 +38,8 @@ interface Student {
   presentAddress: string;
   permanentAddress: string | null;
   roll: number;
-  className: number;
+  classId: string;
+  class?: ClassInfo;
   section: string | null;
   admissionYear: number;
   admissionFee: string;
@@ -173,7 +181,7 @@ export default function StudentDetailsPage() {
                   Roll: {student.roll}
                 </span>
                 <span className="bg-white/20 text-white text-sm px-3 py-1 rounded-full backdrop-blur">
-                  Class {student.className}
+                  {student.class?.nameEn}
                 </span>
                 <span className="bg-white/20 text-white text-sm px-3 py-1 rounded-full backdrop-blur">
                   Session {student.admissionYear}
@@ -311,7 +319,7 @@ export default function StudentDetailsPage() {
                 />
                 <InfoRow
                   label="Class"
-                  value={`Class ${student.className}`}
+                  value={student.class ? `${student.class.nameEn} (${student.class.nameBn})` : "—"}
                 />
                 <InfoRow label="Section" value={student.section} />
                 <InfoRow
@@ -359,13 +367,16 @@ export default function StudentDetailsPage() {
                     <div key={h.id} className="relative flex items-start gap-4 pl-2">
                       {/* Timeline dot */}
                       <div className="w-9 h-9 rounded-full bg-blue-100 border-2 border-blue-500 flex items-center justify-center z-10 shrink-0">
-                        <span className="text-xs font-bold text-blue-700">{h.className}</span>
+                        <span className="text-xs font-bold text-blue-700">
+                          {h.classNameEn.charAt(0)}
+                        </span>
                       </div>
                       {/* Content */}
                       <div className="bg-gray-50 rounded-xl p-4 flex-1 border border-gray-100">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold text-gray-800">
-                            Class {h.className}
+                            {h.classNameEn}
+                            {h.classNameBn && <span className="text-gray-500 font-normal ml-2 text-sm">({h.classNameBn})</span>}
                           </h3>
                           <span className="text-xs font-medium bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                             {h.result}
@@ -378,12 +389,12 @@ export default function StudentDetailsPage() {
                         </div>
                         {index < history.length - 1 && (
                           <p className="text-xs text-gray-400 mt-2">
-                            Promoted to Class {history[index + 1].className} in {history[index + 1].session}
+                            Promoted to {history[index + 1].classNameEn} in {history[index + 1].session}
                           </p>
                         )}
                         {index === history.length - 1 && (
                           <p className="text-xs text-gray-400 mt-2">
-                            Promoted to Class {student.className} in {student.admissionYear}
+                            Promoted to {student.class?.nameEn} in {student.admissionYear}
                           </p>
                         )}
                       </div>
@@ -393,12 +404,15 @@ export default function StudentDetailsPage() {
                   {/* Current class (always shown at the end) */}
                   <div className="relative flex items-start gap-4 pl-2">
                     <div className="w-9 h-9 rounded-full bg-blue-600 border-2 border-blue-600 flex items-center justify-center z-10 shrink-0">
-                      <span className="text-xs font-bold text-white">{student.className}</span>
+                      <span className="text-xs font-bold text-white">
+                        {student.class?.nameEn.charAt(0)}
+                      </span>
                     </div>
                     <div className="bg-blue-50 rounded-xl p-4 flex-1 border border-blue-200">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-blue-800">
-                          Class {student.className}
+                          {student.class?.nameEn}
+                          {student.class?.nameBn && <span className="text-blue-500 font-normal ml-2 text-sm">({student.class.nameBn})</span>}
                         </h3>
                         <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                           Current
