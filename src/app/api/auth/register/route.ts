@@ -1,14 +1,24 @@
 import { prisma } from "@/lib/prisma";
-import { signToken } from "@/lib/auth";
+import { signToken, UserRole } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
-export async function POST(request: NextRequest) {
-  const { phone, name, password } = await request.json();
+const VALID_ROLES: UserRole[] = ["student", "teacher", "admin"];
 
-  if (!phone || !name || !password) {
+export async function POST(request: NextRequest) {
+  const { name, phone, password, confirmPassword, role } = await request.json();
+
+  // Validation
+  if (!name || !phone || !password || !confirmPassword || !role) {
     return NextResponse.json(
-      { error: "Phone, name, and password are required" },
+      { error: "All fields are required" },
+      { status: 400 }
+    );
+  }
+
+  if (password !== confirmPassword) {
+    return NextResponse.json(
+      { error: "Passwords do not match" },
       { status: 400 }
     );
   }
@@ -20,38 +30,43 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (!VALID_ROLES.includes(role)) {
+    return NextResponse.json(
+      { error: "Invalid role" },
+      { status: 400 }
+    );
+  }
+
   // Check if phone already exists
-  const existing = await prisma.teacher.findUnique({ where: { phone } });
+  const existing = await prisma.user.findUnique({ where: { phone } });
   if (existing) {
     return NextResponse.json(
-      { error: "A teacher with this phone number already exists" },
+      { error: "A user with this phone number already exists" },
       { status: 409 }
     );
   }
 
-  // Hash password
+  // Hash password & create
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Create teacher
-  const teacher = await prisma.teacher.create({
-    data: { phone, name, password: hashedPassword },
+  const user = await prisma.user.create({
+    data: { name, phone, password: hashedPassword, role },
   });
 
   // Create JWT token
   const token = await signToken({
-    id: teacher.id,
-    phone: teacher.phone,
-    name: teacher.name,
-    role: teacher.role,
+    id: user.id,
+    phone: user.phone,
+    name: user.name,
+    role: user.role as UserRole,
   });
 
-  // Set cookie and return response
   const response = NextResponse.json(
     {
-      id: teacher.id,
-      phone: teacher.phone,
-      name: teacher.name,
-      role: teacher.role,
+      id: user.id,
+      phone: user.phone,
+      name: user.name,
+      role: user.role,
     },
     { status: 201 }
   );
@@ -60,7 +75,7 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7,
     path: "/",
   });
 

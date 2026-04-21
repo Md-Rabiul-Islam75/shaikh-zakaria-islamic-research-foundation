@@ -1,36 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 
-// Routes that require authentication
-const protectedPaths = ["/class", "/student"];
-
-// Routes for unauthenticated users only (redirect if logged in)
-const authPaths = ["/login", "/register"];
+const STUDENT_PORTAL = ["/student-portal", "/class", "/student"];
+const TEACHER_PORTAL = ["/teacher-portal", "/teachers"];
+const ADMIN_PORTAL = ["/admin-portal", "/admin"];
+const AUTH_PATHS = ["/login", "/register"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("auth-token")?.value;
-
-  const isProtected = protectedPaths.some((path) => pathname.startsWith(path));
-  const isAuthPath = authPaths.some((path) => pathname.startsWith(path));
-
   const user = token ? await verifyToken(token) : null;
 
-  // Protected route + not logged in → redirect to login
-  if (isProtected && !user) {
+  const inStudentPortal = STUDENT_PORTAL.some((p) => pathname.startsWith(p));
+  const inTeacherPortal = TEACHER_PORTAL.some((p) => pathname.startsWith(p));
+  const inAdminPortal = ADMIN_PORTAL.some((p) => pathname.startsWith(p));
+  const isAuthPath = AUTH_PATHS.some((p) => pathname.startsWith(p));
+
+  // Logged-in users should not see login/register pages
+  if (isAuthPath && user) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Not logged in + protected route → redirect to login
+  if ((inStudentPortal || inTeacherPortal || inAdminPortal) && !user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Login/register page + already logged in → redirect to home
-  if (isAuthPath && user) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // Role-based enforcement
+  if (user) {
+    const role = user.role;
+
+    if (role === "student" && (inTeacherPortal || inAdminPortal)) {
+      return NextResponse.redirect(new URL("/?error=forbidden", request.url));
+    }
+
+    if (role === "teacher" && inAdminPortal) {
+      return NextResponse.redirect(new URL("/?error=forbidden", request.url));
+    }
+
+    // Admin can access everything
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/class/:path*", "/student/:path*", "/login", "/register"],
+  matcher: [
+    "/student-portal/:path*",
+    "/teacher-portal/:path*",
+    "/admin-portal/:path*",
+    "/class/:path*",
+    "/student/:path*",
+    "/teachers/:path*",
+    "/admin/:path*",
+    "/login",
+    "/register",
+  ],
 };

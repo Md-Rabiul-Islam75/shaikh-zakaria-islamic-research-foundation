@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import LogoutButton from "./LogoutButton";
+import AuthLinks from "./AuthLinks";
 
 export default async function Navbar() {
   const user = await getCurrentUser();
@@ -26,8 +27,8 @@ export default async function Navbar() {
                   />
                 </svg>
               </div>
-              <span className="text-white text-xl font-bold tracking-wide">
-                Student Management
+              <span className="text-white text-lg sm:text-xl font-bold tracking-wide">
+                জামিয়া দারুল উলুম নুরিয়া মাদ্‌রাসা ও এতিমখানা
               </span>
             </Link>
             <div className="flex items-center gap-4">
@@ -48,24 +49,22 @@ export default async function Navbar() {
                     <span className="text-white text-sm font-medium">
                       {user.name}
                     </span>
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        user.role === "admin"
+                          ? "bg-amber-400 text-amber-900"
+                          : user.role === "teacher"
+                            ? "bg-emerald-400 text-emerald-900"
+                            : "bg-sky-300 text-sky-900"
+                      }`}
+                    >
+                      {user.role}
+                    </span>
                   </div>
                   <LogoutButton />
                 </>
               ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="text-blue-100 hover:text-white transition-colors font-medium text-sm"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="bg-white text-blue-700 hover:bg-blue-50 font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Register
-                  </Link>
-                </>
+                <AuthLinks />
               )}
             </div>
           </div>
@@ -74,16 +73,9 @@ export default async function Navbar() {
       {/* Marquee education quote */}
       <div className="bg-blue-600 text-white py-2 overflow-hidden">
         <div className="animate-marquee whitespace-nowrap">
-          &quot;Education is the most powerful weapon which you can use to change
-          the world.&quot; — Nelson Mandela &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-          &quot;The roots of education are bitter, but the fruit is
-          sweet.&quot; — Aristotle &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-          &quot;Live as if you were to die tomorrow. Learn as if you were to
-          live forever.&quot; — Mahatma Gandhi
-          &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; &quot;শিক্ষা জাতির
-          মেরুদণ্ড&quot; &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; &quot;An
-          investment in knowledge pays the best interest.&quot; — Benjamin
-          Franklin
+          &quot;শিক্ষা জাতির মেরুদণ্ড&quot;
+          &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+          &quot;জ্ঞান অর্জন প্রত্যেক মুসলিম নর-নারীর উপর ফরজ।&quot; — হাদীস (ইবনে মাজাহ)
         </div>
       </div>
     </header>

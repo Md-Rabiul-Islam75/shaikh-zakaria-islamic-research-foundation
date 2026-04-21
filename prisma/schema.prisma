@@ -7,14 +7,28 @@ datasource db {
   provider = "postgresql"
 }
 
-model Teacher {
-  id        String   @id @default(cuid())
-  phone     String   @unique
-  name      String
-  password  String
-  role      String   @default("teacher")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model User {
+  id                  String   @id @default(cuid())
+  name                String
+  phone               String   @unique
+  password            String
+  role                String   @default("student") // student | teacher | admin
+  responsibleClasses  String?  // JSON array of class names (for teachers)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Class {
+  id          String   @id @default(cuid())
+  nameEn      String
+  nameBn      String
+  description String?
+  order       Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([order])
 }
 
 model Student {

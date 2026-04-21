@@ -5,11 +5,13 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback_secret_change_me"
 );
 
+export type UserRole = "student" | "teacher" | "admin";
+
 export interface JWTPayload {
   id: string;
   phone: string;
   name: string;
-  role: string;
+  role: UserRole;
   [key: string]: unknown;
 }
 
@@ -35,4 +37,14 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
   const token = cookieStore.get("auth-token")?.value;
   if (!token) return null;
   return verifyToken(token);
+}
+
+export function canAccessPortal(
+  userRole: UserRole,
+  portal: "student" | "teacher" | "admin"
+): boolean {
+  if (userRole === "admin") return true; // admin sees all
+  if (userRole === "teacher") return portal === "student" || portal === "teacher";
+  if (userRole === "student") return portal === "student";
+  return false;
 }

@@ -3,39 +3,100 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Swal from "sweetalert2";
+import { toast, modal } from "@/lib/toast";
+
+type Role = "student" | "teacher" | "admin";
+
+const roles: {
+  value: Role;
+  label: string;
+  color: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    value: "student",
+    label: "Student",
+    color: "from-emerald-500 to-emerald-600",
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+      </svg>
+    ),
+  },
+  {
+    value: "teacher",
+    label: "Teacher",
+    color: "from-blue-500 to-blue-600",
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+    ),
+  },
+  {
+    value: "admin",
+    label: "Admin",
+    color: "from-amber-500 to-amber-600",
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
+  },
+];
 
 export default function LoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ phone: "", password: "" });
+  const [form, setForm] = useState({
+    phone: "",
+    password: "",
+    role: "student" as Role,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!form.phone.trim() || !form.password.trim()) {
+      toast.warning("Missing fields", "Please fill in phone and password.");
+      return;
+    }
+
     setSubmitting(true);
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-
-    setSubmitting(false);
-
-    if (res.ok) {
-      const data = await res.json();
-      await Swal.fire({
-        title: `Welcome back, ${data.name}!`,
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
-      router.push("/");
-      router.refresh();
-    } else {
+
       const data = await res.json();
-      Swal.fire("Login Failed", data.error || "Invalid credentials", "error");
+      setSubmitting(false);
+
+      if (res.ok) {
+        await modal.success(
+          `Welcome back, ${data.name}!`,
+          `You are logged in as ${data.role.toUpperCase()}`
+        );
+        router.push("/");
+        router.refresh();
+      } else {
+        // Map status codes to user-friendly messages
+        if (res.status === 404) {
+          toast.error("Account not found", data.error);
+        } else if (res.status === 403) {
+          toast.error("Wrong role selected", data.error);
+        } else if (res.status === 401) {
+          toast.error("Login failed", data.error);
+        } else {
+          toast.error("Something went wrong", data.error || "Please try again");
+        }
+      }
+    } catch {
+      setSubmitting(false);
+      toast.error("Network error", "Please check your connection and try again.");
     }
   };
 
@@ -48,11 +109,47 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Teacher Login</h1>
-          <p className="text-sm text-gray-500 mt-1">Sign in to manage students</p>
+          <h1 className="text-2xl font-bold text-gray-800">Welcome Back</h1>
+          <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Role Selector */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Login As *
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {roles.map((r) => (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, role: r.value })}
+                  className={`relative p-3 rounded-xl border-2 transition-all ${
+                    form.role === r.value
+                      ? "border-blue-500 bg-blue-50 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${r.color} flex items-center justify-center text-white mx-auto mb-1.5`}
+                  >
+                    {r.icon}
+                  </div>
+                  <span className="text-xs font-bold text-gray-700">{r.label}</span>
+                  {form.role === r.value && (
+                    <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                      <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Phone */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
             <input
@@ -60,10 +157,12 @@ export default function LoginPage() {
               required
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               placeholder="01XXX-XXXXXX"
             />
           </div>
+
+          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
             <div className="relative">
@@ -72,7 +171,7 @@ export default function LoginPage() {
                 required
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 placeholder="Enter your password"
               />
               <button
@@ -98,7 +197,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-lg transition-colors shadow-sm"
           >
             {submitting ? "Signing in..." : "Login"}
           </button>
