@@ -224,8 +224,9 @@ export default function TeacherDetailsClient({
             </div>
           </div>
 
-          <div className="px-4 sm:px-6 pb-6">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-14 sm:-mt-16">
+          <div className="px-4 sm:px-6 pb-6 relative z-10">
+            {/* Avatar overlaps the cover banner (pulled up) */}
+            <div className="-mt-14 sm:-mt-16 flex justify-center sm:justify-start relative z-20">
               <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center overflow-hidden shrink-0">
                 {imagePreview ? (
                   <Image
@@ -243,22 +244,24 @@ export default function TeacherDetailsClient({
                   </div>
                 )}
               </div>
-              <div className="flex-1 sm:pb-2">
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
-                  {teacher.name}
-                  {isSelf && (
-                    <span className="ml-2 text-[10px] align-middle font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                      YOU
-                    </span>
-                  )}
-                </h1>
-                <p className="text-indigo-600 font-semibold text-sm sm:text-base mt-0.5">
-                  {teacher.designation || "Teacher"}
-                </p>
-                <p className="text-slate-500 text-sm mt-0.5">
-                  {teacher.phone}
-                </p>
-              </div>
+            </div>
+
+            {/* Info — stays below the banner, not pulled up */}
+            <div className="mt-3 sm:mt-4 text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 leading-tight">
+                {teacher.name}
+                {isSelf && (
+                  <span className="ml-2 text-[10px] align-middle font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                    YOU
+                  </span>
+                )}
+              </h1>
+              <p className="text-indigo-600 font-semibold text-sm sm:text-base mt-1">
+                {teacher.designation || "Teacher"}
+              </p>
+              <p className="text-slate-500 text-sm mt-0.5">
+                {teacher.phone}
+              </p>
             </div>
           </div>
         </div>

@@ -128,24 +128,32 @@ export async function DELETE(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Only admins can delete teacher accounts
-  if (user.role !== "admin") {
+  // BOTH teachers AND admins can delete teachers — only students are blocked
+  if (user.role === "student") {
     return NextResponse.json(
-      { error: "Only admins can delete teacher accounts." },
+      { error: "Students cannot delete teacher accounts." },
       { status: 403 }
     );
   }
 
   const { id } = await params;
 
-  const teacher = await prisma.user.findUnique({ where: { id } });
-  if (!teacher || teacher.role !== "teacher") {
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target || target.role !== "teacher") {
     return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
   }
 
-  if (teacher.imagePublicId) {
+  // Cannot delete yourself
+  if (target.id === user.id) {
+    return NextResponse.json(
+      { error: "You cannot delete your own account." },
+      { status: 403 }
+    );
+  }
+
+  if (target.imagePublicId) {
     try {
-      await cloudinary.uploader.destroy(teacher.imagePublicId);
+      await cloudinary.uploader.destroy(target.imagePublicId);
     } catch {
       // ignore cleanup errors
     }

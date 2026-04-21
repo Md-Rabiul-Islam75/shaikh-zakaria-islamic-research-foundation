@@ -45,7 +45,23 @@ export default function TeacherPortalClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
-  const canDelete = userRole === "admin";
+  // Add Teacher modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    designation: "",
+    subject: "",
+    qualification: "",
+  });
+
+  // Both teachers and admins can modify; only students are blocked
+  const canModify = userRole === "teacher" || userRole === "admin";
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -99,9 +115,69 @@ export default function TeacherPortalClient({
     teachers.map((t) => t.subject).filter((s): s is string => !!s)
   ).size;
 
+  const resetAddForm = () => {
+    setAddForm({
+      name: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+      designation: "",
+      subject: "",
+      qualification: "",
+    });
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const handleAddTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!addForm.name.trim() || !addForm.phone.trim()) {
+      toast.warning("Missing fields", "Name and phone are required.");
+      return;
+    }
+    if (addForm.password.length < 6) {
+      toast.warning("Weak password", "Password must be at least 6 characters.");
+      return;
+    }
+    if (addForm.password !== addForm.confirmPassword) {
+      toast.warning("Password mismatch", "Passwords do not match.");
+      return;
+    }
+
+    setAddSubmitting(true);
+
+    try {
+      const res = await fetch("/api/teachers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(addForm),
+      });
+
+      const data = await res.json();
+      setAddSubmitting(false);
+
+      if (res.ok) {
+        toast.success("Teacher added", `${data.name} has been registered.`);
+        setShowAddModal(false);
+        resetAddForm();
+        fetchAll();
+      } else {
+        if (res.status === 409) {
+          toast.error("Phone already registered", data.error);
+        } else {
+          toast.error("Failed to add teacher", data.error || "Please try again");
+        }
+      }
+    } catch {
+      setAddSubmitting(false);
+      toast.error("Network error", "Please check your connection.");
+    }
+  };
+
   const handleDelete = async (teacher: Teacher) => {
-    if (!canDelete) {
-      toast.warning("Not allowed", "Only admins can delete teacher accounts.");
+    if (!canModify) {
+      toast.warning("Not allowed", "Only teachers and admins can delete teachers.");
       return;
     }
 
@@ -125,34 +201,60 @@ export default function TeacherPortalClient({
     <div className="bg-slate-50 min-h-[calc(100vh-200px)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-start gap-3 mb-6">
-          <Link
-            href="/"
-            className="w-10 h-10 shrink-0 bg-white hover:bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center transition-colors"
-          >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-700 text-[11px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7l6-3 6 3v11l-6 3-6-3z" />
-                </svg>
-                Teacher Portal
-              </span>
-              <span className="text-xs text-gray-500">
-                {userName} ({userRole})
-              </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-start gap-3 min-w-0">
+            <Link
+              href="/"
+              className="w-10 h-10 shrink-0 bg-white hover:bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center transition-colors"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-700 text-[11px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7l6-3 6 3v11l-6 3-6-3z" />
+                  </svg>
+                  Teacher Portal
+                </span>
+                <span className="text-xs text-gray-500">
+                  {userName} ({userRole})
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
+                Staff Directory
+              </h1>
+              <p className="text-slate-500 text-sm">
+                Professional profiles of all teachers at our Madrasa
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
-              Staff Directory
-            </h1>
-            <p className="text-slate-500 text-sm">
-              Professional profiles of all teachers at our Madrasa
-            </p>
           </div>
+
+          {canModify && (
+            <button
+              onClick={() => {
+                if (showAddModal) {
+                  setShowAddModal(false);
+                  resetAddForm();
+                } else {
+                  setShowAddModal(true);
+                }
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm whitespace-nowrap shrink-0"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={showAddModal ? "M6 18L18 6M6 6l12 12" : "M12 4v16m8-8H4"}
+                />
+              </svg>
+              {showAddModal ? "Close Form" : "Add Teacher"}
+            </button>
+          )}
         </div>
 
         {/* Stats Strip */}
@@ -240,6 +342,209 @@ export default function TeacherPortalClient({
           <span className="font-semibold text-slate-800">{filtered.length}</span>{" "}
           teacher{filtered.length !== 1 ? "s" : ""} found
         </p>
+
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Add Teacher Form (Left Sidebar) */}
+          {showAddModal && (
+            <div className="lg:w-[400px] lg:shrink-0">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden lg:sticky lg:top-4">
+                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-5 py-4">
+                  <h2 className="text-lg font-bold">Add New Teacher</h2>
+                  <p className="text-indigo-100 text-xs mt-0.5">
+                    Teacher will log in with the phone & password you set.
+                  </p>
+                </div>
+
+                <form onSubmit={handleAddTeacher} className="p-5 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={addForm.name}
+                      onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="e.g., Md. Rahim Uddin"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={addForm.phone}
+                      onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="01XXX-XXXXXX"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Password *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={6}
+                        value={addForm.password}
+                        onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="Minimum 6 characters"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Confirm Password *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        required
+                        value={addForm.confirmPassword}
+                        onChange={(e) => setAddForm({ ...addForm, confirmPassword: e.target.value })}
+                        className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-sm focus:ring-2 outline-none ${
+                          addForm.confirmPassword && addForm.password !== addForm.confirmPassword
+                            ? "border-red-400 focus:ring-red-500 focus:border-red-500"
+                            : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                        }`}
+                        placeholder="Re-enter password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {addForm.confirmPassword &&
+                      addForm.password !== addForm.confirmPassword && (
+                        <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                      )}
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                      Optional Info
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Designation
+                        </label>
+                        <input
+                          type="text"
+                          value={addForm.designation}
+                          onChange={(e) =>
+                            setAddForm({ ...addForm, designation: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                          placeholder="e.g., Head Teacher"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Subject
+                        </label>
+                        <input
+                          type="text"
+                          value={addForm.subject}
+                          onChange={(e) =>
+                            setAddForm({ ...addForm, subject: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                          placeholder="e.g., Arabic, Quran"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Qualification
+                        </label>
+                        <input
+                          type="text"
+                          value={addForm.qualification}
+                          onChange={(e) =>
+                            setAddForm({ ...addForm, qualification: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                          placeholder="e.g., Dawra-e-Hadith"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-3">
+                      The teacher can fill in more details later from their profile.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddModal(false);
+                        resetAddForm();
+                      }}
+                      className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium rounded-lg transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={addSubmitting}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-2.5 rounded-lg transition-colors shadow-sm text-sm flex items-center justify-center gap-2"
+                    >
+                      {addSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        "Add Teacher"
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Teacher list */}
+          <div className="flex-1 min-w-0">
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -387,7 +692,7 @@ export default function TeacherPortalClient({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                           </svg>
                         </Link>
-                        {canDelete && !isSelf && (
+                        {canModify && !isSelf && (
                           <button
                             onClick={() => handleDelete(t)}
                             className="w-9 h-9 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center justify-center transition-colors"
@@ -499,7 +804,7 @@ export default function TeacherPortalClient({
                       >
                         View Profile
                       </Link>
-                      {canDelete && !isSelf && (
+                      {canModify && !isSelf && (
                         <button
                           onClick={() => handleDelete(t)}
                           className="w-8 h-8 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center justify-center transition-colors"
@@ -517,6 +822,8 @@ export default function TeacherPortalClient({
             })}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );
