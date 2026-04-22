@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, UserRole } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -39,6 +40,17 @@ export async function POST(request: NextRequest) {
       order: nextOrder,
       createdById: user.id,
     },
+  });
+
+  await logActivity({
+    userId: user.id,
+    userRole: user.role as UserRole,
+    userName: user.name,
+    action: "CREATE_CLASS",
+    targetType: "class",
+    targetId: newClass.id,
+    targetName: newClass.nameEn,
+    metadata: { nameBn: newClass.nameBn },
   });
 
   return NextResponse.json(newClass, { status: 201 });

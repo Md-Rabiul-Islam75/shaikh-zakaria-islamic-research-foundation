@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import cloudinary from "@/lib/cloudinary";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, UserRole } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -116,6 +117,16 @@ export async function PUT(
     },
   });
 
+  await logActivity({
+    userId: user.id,
+    userRole: user.role as UserRole,
+    userName: user.name,
+    action: "UPDATE_TEACHER",
+    targetType: "teacher",
+    targetId: updated.id,
+    targetName: updated.name,
+  });
+
   return NextResponse.json(updated);
 }
 
@@ -160,6 +171,16 @@ export async function DELETE(
   }
 
   await prisma.user.delete({ where: { id } });
+
+  await logActivity({
+    userId: user.id,
+    userRole: user.role as UserRole,
+    userName: user.name,
+    action: "DELETE_TEACHER",
+    targetType: "teacher",
+    targetId: target.id,
+    targetName: target.name,
+  });
 
   return NextResponse.json({ message: "Teacher deleted successfully" });
 }

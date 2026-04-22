@@ -28,8 +28,28 @@ model User {
   bio                 String?   // short bio
   responsibleClasses  String?   // JSON string array of class IDs
 
+  activities          ActivityLog[]
+
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userRole   String   // snapshot: student | teacher | admin
+  userName   String   // snapshot: user's name at time of action
+  action     String   // e.g., CREATE_STUDENT, UPDATE_CLASS, DELETE_TEACHER
+  targetType String   // student | teacher | class
+  targetId   String?  // id of the target record (may become invalid if deleted)
+  targetName String?  // human-readable name for display
+  metadata   String?  // optional JSON with extra context
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userRole])
 }
 
 model Class {

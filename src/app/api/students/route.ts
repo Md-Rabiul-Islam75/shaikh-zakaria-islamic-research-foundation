@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, UserRole } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -80,6 +81,21 @@ export async function POST(request: NextRequest) {
       imageUrl: body.imageUrl || null,
       imagePublicId: body.imagePublicId || null,
       createdById: user.id,
+    },
+  });
+
+  await logActivity({
+    userId: user.id,
+    userRole: user.role as UserRole,
+    userName: user.name,
+    action: "CREATE_STUDENT",
+    targetType: "student",
+    targetId: student.id,
+    targetName: student.studentNameEn,
+    metadata: {
+      classNameEn: targetClass.nameEn,
+      roll: student.roll,
+      admissionYear: student.admissionYear,
     },
   });
 

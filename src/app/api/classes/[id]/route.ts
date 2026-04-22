@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, UserRole } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -49,6 +50,16 @@ export async function PUT(
     },
   });
 
+  await logActivity({
+    userId: user.id,
+    userRole: user.role as UserRole,
+    userName: user.name,
+    action: "UPDATE_CLASS",
+    targetType: "class",
+    targetId: updated.id,
+    targetName: updated.nameEn,
+  });
+
   return NextResponse.json(updated);
 }
 
@@ -76,6 +87,16 @@ export async function DELETE(
   }
 
   await prisma.class.delete({ where: { id } });
+
+  await logActivity({
+    userId: user.id,
+    userRole: user.role as UserRole,
+    userName: user.name,
+    action: "DELETE_CLASS",
+    targetType: "class",
+    targetId: cls.id,
+    targetName: cls.nameEn,
+  });
 
   return NextResponse.json({ message: "Class deleted successfully" });
 }

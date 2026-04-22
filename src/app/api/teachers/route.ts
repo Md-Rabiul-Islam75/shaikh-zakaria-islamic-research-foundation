@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, UserRole } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
@@ -116,6 +117,16 @@ export async function POST(request: NextRequest) {
       subject: true,
       qualification: true,
     },
+  });
+
+  await logActivity({
+    userId: user.id,
+    userRole: user.role as UserRole,
+    userName: user.name,
+    action: "CREATE_TEACHER",
+    targetType: "teacher",
+    targetId: teacher.id,
+    targetName: teacher.name,
   });
 
   return NextResponse.json(teacher, { status: 201 });

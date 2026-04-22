@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, UserRole } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -72,6 +73,21 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+  });
+
+  await logActivity({
+    userId: user.id,
+    userRole: user.role as UserRole,
+    userName: user.name,
+    action: "PROMOTE_STUDENTS",
+    targetType: "class",
+    targetId: toClassId,
+    targetName: `${fromClass.nameEn} → ${toClass.nameEn}`,
+    metadata: {
+      count: students.length,
+      fromSession,
+      toSession,
+    },
   });
 
   return NextResponse.json({
