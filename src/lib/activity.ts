@@ -17,9 +17,9 @@ export type ActivityTargetType = "student" | "teacher" | "class";
 
 // Per-user activity limits — oldest entries are pruned
 const LIMIT_BY_ROLE: Record<UserRole, number> = {
-  student: 30,
-  teacher: 25,
-  admin: 100,
+  student: 100,
+  teacher: 30,
+  admin: 25,
 };
 
 interface LogActivityArgs {

@@ -91,25 +91,40 @@ export default function AdminPortalClient({
   const [actionFilter, setActionFilter] = useState<string>("");
   const [targetFilter, setTargetFilter] = useState<string>("");
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalFiltered, setTotalFiltered] = useState(0);
+  const pageSize = 20;
+
   const fetchActivities = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (roleFilter) params.set("role", roleFilter);
     if (actionFilter) params.set("action", actionFilter);
     if (targetFilter) params.set("targetType", targetFilter);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
 
     const res = await fetch(`/api/activities?${params.toString()}`);
     if (res.ok) {
       const data = await res.json();
       setActivities(data.activities);
       setCountByRole(data.countByRole || {});
+      setTotalPages(data.totalPages || 1);
+      setTotalFiltered(data.total || 0);
     }
     setLoading(false);
-  }, [roleFilter, actionFilter, targetFilter]);
+  }, [roleFilter, actionFilter, targetFilter, page]);
 
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
+
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setPage(1);
+  }, [roleFilter, actionFilter, targetFilter]);
 
   const clearFilters = () => {
     setRoleFilter("");
@@ -214,7 +229,7 @@ export default function AdminPortalClient({
               <p className="text-xl font-extrabold text-sky-600 mt-0.5">
                 {countByRole.student || 0}
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Last 30 kept per student</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Last 100 kept per student</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,7 +245,7 @@ export default function AdminPortalClient({
               <p className="text-xl font-extrabold text-emerald-600 mt-0.5">
                 {countByRole.teacher || 0}
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Last 25 kept per teacher</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Last 30 kept per teacher</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,7 +261,7 @@ export default function AdminPortalClient({
               <p className="text-xl font-extrabold text-amber-600 mt-0.5">
                 {countByRole.admin || 0}
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Last 100 kept per admin</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Last 25 kept per admin</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -321,7 +336,18 @@ export default function AdminPortalClient({
             <div>
               <h2 className="text-lg font-bold text-slate-800">Activity Feed</h2>
               <p className="text-xs text-slate-500">
-                {activities.length} activities shown
+                {totalFiltered > 0 ? (
+                  <>
+                    Showing{" "}
+                    <span className="font-semibold">
+                      {(page - 1) * pageSize + 1}–
+                      {Math.min(page * pageSize, totalFiltered)}
+                    </span>{" "}
+                    of <span className="font-semibold">{totalFiltered}</span>
+                  </>
+                ) : (
+                  "No activity found"
+                )}
               </p>
             </div>
             <button
@@ -457,6 +483,70 @@ export default function AdminPortalClient({
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && totalPages > 1 && (
+            <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap bg-slate-50/50">
+              <p className="text-xs text-slate-500">
+                Page <span className="font-semibold text-slate-700">{page}</span> of{" "}
+                <span className="font-semibold text-slate-700">{totalPages}</span>
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="First page"
+                >
+                  «
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Prev
+                </button>
+
+                {/* Numbered buttons (windowed: 5 buttons max around current) */}
+                {(() => {
+                  const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+                  const end = Math.min(totalPages, start + 4);
+                  const pages: number[] = [];
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  return pages.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 text-xs font-semibold rounded-lg transition-colors ${
+                        page === p
+                          ? "bg-amber-600 text-white shadow-sm"
+                          : "border border-gray-300 bg-white hover:bg-gray-50 text-slate-700"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ));
+                })()}
+
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+                <button
+                  onClick={() => setPage(totalPages)}
+                  disabled={page === totalPages}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="Last page"
+                >
+                  »
+                </button>
+              </div>
             </div>
           )}
         </div>

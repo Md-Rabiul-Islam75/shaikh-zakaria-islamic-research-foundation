@@ -17,11 +17,16 @@ export async function GET(request: NextRequest) {
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const role = searchParams.get("role"); // student | teacher | admin
-  const action = searchParams.get("action"); // CREATE_STUDENT, etc.
-  const targetType = searchParams.get("targetType"); // student | teacher | class
+  const role = searchParams.get("role");
+  const action = searchParams.get("action");
+  const targetType = searchParams.get("targetType");
   const userId = searchParams.get("userId");
-  const limit = parseInt(searchParams.get("limit") || "100");
+
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+  const pageSize = Math.min(
+    100,
+    Math.max(1, parseInt(searchParams.get("pageSize") || "20"))
+  );
 
   const where: Record<string, unknown> = {};
   if (role) where.userRole = role;
@@ -29,11 +34,12 @@ export async function GET(request: NextRequest) {
   if (targetType) where.targetType = targetType;
   if (userId) where.userId = userId;
 
-  const [activities, counts] = await Promise.all([
+  const [activities, total, counts] = await Promise.all([
     prisma.activityLog.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: limit,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
       include: {
         user: {
           select: {
@@ -46,6 +52,7 @@ export async function GET(request: NextRequest) {
         },
       },
     }),
+    prisma.activityLog.count({ where }),
     prisma.activityLog.groupBy({
       by: ["userRole"],
       _count: true,
@@ -60,6 +67,10 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     activities,
     countByRole,
-    total: Object.values(countByRole).reduce((a, b) => a + b, 0),
+    totalOverall: Object.values(countByRole).reduce((a, b) => a + b, 0),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
   });
 }
