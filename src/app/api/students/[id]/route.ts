@@ -59,6 +59,7 @@ export async function PUT(
   if (body.classId !== undefined) data.classId = body.classId;
   if (body.section !== undefined) data.section = body.section;
   if (body.admissionYear !== undefined) data.admissionYear = parseInt(body.admissionYear);
+  if (body.admissionType !== undefined) data.admissionType = body.admissionType;
   if (body.admissionFee !== undefined) data.admissionFee = body.admissionFee;
   if (body.previousSchool !== undefined) data.previousSchool = body.previousSchool;
   if (body.imageUrl !== undefined) data.imageUrl = body.imageUrl;

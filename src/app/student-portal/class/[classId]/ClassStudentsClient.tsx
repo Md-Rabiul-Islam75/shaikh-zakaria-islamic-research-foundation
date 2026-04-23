@@ -26,6 +26,7 @@ interface Student {
   classId: string;
   section: string | null;
   admissionYear: number;
+  admissionType: string;
   admissionFee: string;
   previousSchool: string | null;
   imageUrl: string | null;
@@ -91,6 +92,7 @@ export default function ClassStudentsClient({
     permanentAddress: "",
     roll: "",
     section: "",
+    admissionType: "free",
     admissionFee: "Free",
     previousSchool: "",
   });
@@ -145,6 +147,7 @@ export default function ClassStudentsClient({
       permanentAddress: "",
       roll: "",
       section: "",
+      admissionType: "free",
       admissionFee: "Free",
       previousSchool: "",
     });
@@ -183,6 +186,7 @@ export default function ClassStudentsClient({
       permanentAddress: student.permanentAddress || "",
       roll: String(student.roll),
       section: student.section || "",
+      admissionType: student.admissionType || "free",
       admissionFee: student.admissionFee,
       previousSchool: student.previousSchool || "",
     });
@@ -739,12 +743,25 @@ export default function ClassStudentsClient({
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Admission Type *</label>
+                    <select
+                      value={form.admissionType}
+                      onChange={(e) => setForm({ ...form, admissionType: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    >
+                      <option value="full_paid">Full Paid</option>
+                      <option value="half_paid">Half Paid</option>
+                      <option value="free">Free</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Admission Fee</label>
                     <input
                       type="text"
                       value={form.admissionFee}
                       onChange={(e) => setForm({ ...form, admissionFee: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="e.g., 500"
                     />
                   </div>
                   <div className="sm:col-span-2">

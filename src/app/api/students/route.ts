@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       classId: body.classId,
       section: body.section || null,
       admissionYear: parseInt(body.admissionYear),
+      admissionType: body.admissionType || "free",
       admissionFee: body.admissionFee || "Free",
       previousSchool: body.previousSchool || null,
       imageUrl: body.imageUrl || null,

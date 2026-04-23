@@ -87,6 +87,7 @@ model Student {
   class              Class          @relation(fields: [classId], references: [id])
   section            String?
   admissionYear      Int
+  admissionType      String         @default("free") // full_paid | half_paid | free
   admissionFee       String         @default("Free")
   previousSchool     String?
   imageUrl           String?

@@ -42,6 +42,7 @@ interface Student {
   class?: ClassInfo;
   section: string | null;
   admissionYear: number;
+  admissionType: string;
   admissionFee: string;
   previousSchool: string | null;
   imageUrl: string | null;
@@ -325,6 +326,16 @@ export default function StudentDetailsPage() {
                 <InfoRow
                   label="Admission Year"
                   value={String(student.admissionYear)}
+                />
+                <InfoRow
+                  label="Admission Type"
+                  value={
+                    student.admissionType === "full_paid"
+                      ? "Full Paid"
+                      : student.admissionType === "half_paid"
+                        ? "Half Paid"
+                        : "Free"
+                  }
                 />
                 <InfoRow label="Admission Fee" value={student.admissionFee} />
                 <InfoRow
