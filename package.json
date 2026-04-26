@@ -18,6 +18,8 @@
     "cloudinary": "^2.9.0",
     "dotenv": "^17.4.2",
     "jose": "^6.2.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "next": "16.2.3",
     "next-cloudinary": "^6.17.5",
     "next-swagger-doc": "^0.4.1",

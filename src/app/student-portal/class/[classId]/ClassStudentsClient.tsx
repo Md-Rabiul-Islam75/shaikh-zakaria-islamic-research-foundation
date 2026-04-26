@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toast, modal } from "@/lib/toast";
 import Swal from "sweetalert2";
 import { UserRole } from "@/lib/auth";
+import PdfExportModal, { PdfColumn } from "@/components/PdfExportModal";
 
 interface Student {
   id: string;
@@ -66,6 +67,8 @@ export default function ClassStudentsClient({
   const [submitting, setSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const [showPdfModal, setShowPdfModal] = useState(false);
 
   // Promote modal state
   const [showPromoteModal, setShowPromoteModal] = useState(false);
@@ -528,6 +531,16 @@ export default function ClassStudentsClient({
               Promote
             </button>
           )}
+
+          <button
+            onClick={() => setShowPdfModal(true)}
+            className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h4a4 4 0 014 4v2M7 7h10M7 11h4m-4 4h2m6 6v-2m0 2h2m-2 0h-2M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            Export PDF
+          </button>
         </div>
       </div>
 
@@ -1129,6 +1142,57 @@ export default function ClassStudentsClient({
           </div>
         </div>
       )}
+
+      {/* PDF Export Modal */}
+      <PdfExportModal
+        open={showPdfModal}
+        onClose={() => setShowPdfModal(false)}
+        title={`${classInfo.nameEn} — Students List`}
+        titleBn={`${classInfo.nameBn} — শিক্ষার্থী তালিকা`}
+        subtitle={`Session ${selectedYear} · ${filteredStudents.length} student${filteredStudents.length !== 1 ? "s" : ""}`}
+        data={filteredStudents as unknown as Record<string, unknown>[]}
+        columns={
+          [
+            { key: "roll", label: "Roll" },
+            { key: "studentNameEn", label: "Name" },
+            { key: "fatherName", label: "Father's Name" },
+            { key: "studentNameBn", label: "Name (Bangla)" },
+            { key: "motherName", label: "Mother's Name" },
+            { key: "phone", label: "Phone" },
+            { key: "gender", label: "Gender" },
+            { key: "religion", label: "Religion" },
+            { key: "bloodGroup", label: "Blood Group" },
+            {
+              key: "dateOfBirth",
+              label: "Date of Birth",
+              format: (r) =>
+                r.dateOfBirth
+                  ? new Date(String(r.dateOfBirth)).toLocaleDateString("en-GB")
+                  : "—",
+            },
+            { key: "section", label: "Section" },
+            {
+              key: "admissionType",
+              label: "Admission Type",
+              format: (r) => {
+                const t = String(r.admissionType || "free");
+                return t === "full_paid"
+                  ? "Full Paid"
+                  : t === "half_paid"
+                    ? "Half Paid"
+                    : "Free";
+              },
+            },
+            { key: "admissionFee", label: "Admission Fee" },
+            { key: "presentAddress", label: "Present Address" },
+            { key: "birthCertificateNo", label: "Birth Cert No." },
+            { key: "previousSchool", label: "Previous School" },
+          ] as PdfColumn[]
+        }
+        defaultSelected={["roll", "studentNameEn", "fatherName"]}
+        maxColumns={8}
+        filename={`${classInfo.nameEn.replace(/\s+/g, "_")}_${selectedYear}_students`}
+      />
     </div>
   );
 }

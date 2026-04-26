@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast, modal } from "@/lib/toast";
 import { UserRole } from "@/lib/auth";
+import PdfExportModal, { PdfColumn } from "@/components/PdfExportModal";
 
 interface Teacher {
   id: string;
@@ -47,6 +48,7 @@ export default function TeacherPortalClient({
 
   // Add Teacher modal
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -232,29 +234,41 @@ export default function TeacherPortalClient({
             </div>
           </div>
 
-          {canModify && (
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => {
-                if (showAddModal) {
-                  setShowAddModal(false);
-                  resetAddForm();
-                } else {
-                  setShowAddModal(true);
-                }
-              }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm whitespace-nowrap shrink-0"
+              onClick={() => setShowPdfModal(true)}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 sm:px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm whitespace-nowrap"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={showAddModal ? "M6 18L18 6M6 6l12 12" : "M12 4v16m8-8H4"}
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h4a4 4 0 014 4v2M7 7h10M7 11h4m-4 4h2m6 6v-2m0 2h2m-2 0h-2M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              {showAddModal ? "Close Form" : "Add Teacher"}
+              Export PDF
             </button>
-          )}
+
+            {canModify && (
+              <button
+                onClick={() => {
+                  if (showAddModal) {
+                    setShowAddModal(false);
+                    resetAddForm();
+                  } else {
+                    setShowAddModal(true);
+                  }
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 sm:px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d={showAddModal ? "M6 18L18 6M6 6l12 12" : "M12 4v16m8-8H4"}
+                  />
+                </svg>
+                {showAddModal ? "Close Form" : "Add Teacher"}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Stats Strip */}
@@ -825,6 +839,63 @@ export default function TeacherPortalClient({
           </div>
         </div>
       </div>
+
+      {/* PDF Export Modal */}
+      <PdfExportModal
+        open={showPdfModal}
+        onClose={() => setShowPdfModal(false)}
+        title="Staff Directory"
+        subtitle={`${filtered.length} teacher${filtered.length !== 1 ? "s" : ""}`}
+        data={filtered as unknown as Record<string, unknown>[]}
+        columns={
+          [
+            { key: "name", label: "Name" },
+            { key: "phone", label: "Phone" },
+            { key: "designation", label: "Designation" },
+            { key: "subject", label: "Subject" },
+            { key: "qualification", label: "Qualification" },
+            { key: "gender", label: "Gender" },
+            {
+              key: "dateOfBirth",
+              label: "Date of Birth",
+              format: (r) =>
+                r.dateOfBirth
+                  ? new Date(String(r.dateOfBirth)).toLocaleDateString("en-GB")
+                  : "—",
+            },
+            {
+              key: "joiningDate",
+              label: "Joining Date",
+              format: (r) =>
+                r.joiningDate
+                  ? new Date(String(r.joiningDate)).toLocaleDateString("en-GB")
+                  : "—",
+            },
+            { key: "nidNumber", label: "NID Number" },
+            { key: "address", label: "Address" },
+            {
+              key: "responsibleClasses",
+              label: "Responsible Classes",
+              format: (r) => {
+                const json = r.responsibleClasses as string | null;
+                if (!json) return "—";
+                try {
+                  const ids = JSON.parse(json) as string[];
+                  const names = ids
+                    .map((id) => classes.find((c) => c.id === id)?.nameEn)
+                    .filter(Boolean);
+                  return names.length > 0 ? names.join(", ") : "—";
+                } catch {
+                  return "—";
+                }
+              },
+            },
+          ] as PdfColumn[]
+        }
+        defaultSelected={["name", "phone", "designation"]}
+        maxColumns={8}
+        filename="madrasa_staff_directory"
+      />
     </div>
   );
 }
