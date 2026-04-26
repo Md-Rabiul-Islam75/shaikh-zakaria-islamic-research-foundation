@@ -9,12 +9,12 @@ export default async function Navbar() {
   return (
     <>
       <nav className="bg-blue-700 shadow-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-2 min-h-16 py-2 sm:py-0">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 bg-white rounded-full flex items-center justify-center">
                 <svg
-                  className="w-6 h-6 text-blue-700"
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-blue-700"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -27,26 +27,33 @@ export default async function Navbar() {
                   />
                 </svg>
               </div>
-              <span className="text-white text-lg sm:text-xl font-bold tracking-wide">
+              {/* Full name on md+, shorter on mobile */}
+              <span className="hidden md:inline text-white text-lg lg:text-xl font-bold tracking-wide">
                 জামিয়া দারুল উলুম নুরিয়া মাদ্‌রাসা ও এতিমখানা
               </span>
+              <span className="md:hidden text-white text-sm sm:text-base font-bold tracking-wide leading-tight line-clamp-2">
+                জামিয়া দারুল উলুম
+                <span className="block text-[11px] sm:text-xs font-medium text-blue-100">
+                  নুরিয়া মাদ্‌রাসা ও এতিমখানা
+                </span>
+              </span>
             </Link>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <Link
                 href="/"
-                className="text-blue-100 hover:text-white transition-colors font-medium text-sm"
+                className="text-blue-100 hover:text-white transition-colors font-medium text-sm hidden sm:inline"
               >
                 Home
               </Link>
               {user ? (
                 <>
-                  <div className="hidden sm:flex items-center gap-2 bg-blue-800 px-3 py-1.5 rounded-full">
+                  <div className="hidden lg:flex items-center gap-2 bg-blue-800 px-3 py-1.5 rounded-full">
                     <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
                       <span className="text-blue-700 font-bold text-sm">
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="text-white text-sm font-medium">
+                    <span className="text-white text-sm font-medium truncate max-w-[120px]">
                       {user.name}
                     </span>
                     <span
@@ -61,6 +68,18 @@ export default async function Navbar() {
                       {user.role}
                     </span>
                   </div>
+                  {/* Compact role badge for tablet/mobile */}
+                  <span
+                    className={`lg:hidden text-[10px] font-bold uppercase px-2 py-1 rounded-full ${
+                      user.role === "admin"
+                        ? "bg-amber-400 text-amber-900"
+                        : user.role === "teacher"
+                          ? "bg-emerald-400 text-emerald-900"
+                          : "bg-sky-300 text-sky-900"
+                    }`}
+                  >
+                    {user.role}
+                  </span>
                   <LogoutButton />
                 </>
               ) : (

@@ -114,7 +114,7 @@ export default async function Home() {
   return (
     <div>
       {/* Banner Section */}
-      <section className="relative h-[420px] bg-gradient-to-r from-blue-800 to-blue-600 overflow-hidden">
+      <section className="relative min-h-[360px] sm:h-[420px] bg-gradient-to-r from-blue-800 to-blue-600 overflow-hidden">
         <Image
           src="/students_banner_unsplash.jpg"
           alt="Madrasa Banner"
@@ -122,8 +122,8 @@ export default async function Home() {
           className="object-cover opacity-30"
           priority
         />
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
-          <p className="text-lg md:text-xl text-blue-100 max-w-3xl mb-8">
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[360px] sm:h-full text-center px-4 sm:px-6 py-10 sm:py-0">
+          <p className="text-sm sm:text-lg md:text-xl text-blue-100 max-w-3xl mb-6 sm:mb-8 leading-relaxed">
             A complete solution for managing student admissions, records, and
             class organization. Here you can also view Teachers&apos; records,
             while the Admin can see and manage both Students and Teachers&apos;

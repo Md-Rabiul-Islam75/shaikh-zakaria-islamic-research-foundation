@@ -20,23 +20,46 @@ export interface PdfColumn {
 /**
  * Manual Bangla pre-shaper for jsPDF (which doesn't do Indic script shaping).
  *
- * Left-side vowel signs in Bangla are STORED after the consonant but
- * RENDERED before it. Browsers reorder via OpenType GSUB; jsPDF doesn't.
- * We swap them in the source string so jsPDF emits glyphs in visual order.
+ * Browsers apply OpenType GSUB rules to reorder vowel signs around
+ * consonants; jsPDF doesn't. We pre-shape the source so jsPDF emits glyphs
+ * in visual order. The active jsPDF font must already be set.
  *
- * Handles:
- *   - ি (U+09BF) — i-kar
- *   - ে (U+09C7) — e-kar
- *   - ৈ (U+09C8) — oi-kar
+ * Steps:
+ *   1. Normalize decomposed nukta forms to precomposed
+ *        য + ় (U+09AF U+09BC) → য় (U+09DF)
+ *        ড + ় (U+09A1 U+09BC) → ড় (U+09DC)
+ *        ঢ + ় (U+09A2 U+09BC) → ঢ় (U+09DD)
+ *   2. Split combined vowels (parts on both sides of consonant):
+ *        ো (U+09CB) → ে + cluster + া
+ *        ৌ (U+09CC) → ে + cluster + ৗ (U+09D7)
+ *   3. Move left-side vowel signs (ি, ে, ৈ) BEFORE the consonant cluster
  *
- * Conjunct-aware: matches `(consonant + virama)* + consonant + leftVowel`
- * and moves the vowel before the whole cluster.
+ * Conjunct-aware: matches (consonant + virama)* + consonant + vowel.
  */
 function shapeBangla(text: string): string {
-  return text.replace(
+  // Step 1: precompose nuktas
+  let result = text
+    .replace(/য়/g, "য়")
+    .replace(/ড়/g, "ড়")
+    .replace(/ঢ়/g, "ঢ়");
+
+  // Step 2: split ো and ৌ into their visual parts
+  result = result.replace(
+    /((?:[ক-হড়-য়]্)*[ক-হড়-য়])ো/g,
+    "ে$1া"
+  );
+  result = result.replace(
+    /((?:[ক-হড়-য়]্)*[ক-হড়-য়])ৌ/g,
+    "ে$1ৗ"
+  );
+
+  // Step 3: move left-side vowel signs before the cluster
+  result = result.replace(
     /((?:[ক-হড়-য়]্)*[ক-হড়-য়])([িেৈ])/g,
     "$2$1"
   );
+
+  return result;
 }
 
 /**
