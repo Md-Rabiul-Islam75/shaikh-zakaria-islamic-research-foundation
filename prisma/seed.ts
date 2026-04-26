@@ -6,9 +6,10 @@ import "dotenv/config";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
-const ADMIN_PHONE = "01776627800";
-const ADMIN_NAME = "Administrator";
-const ADMIN_PASSWORD = "amiadmin111";
+const ADMINS = [
+  { phone: "01776627800", name: "Administrator", password: "amiadmin111" },
+  { phone: "01552337781", name: "Administrator", password: "amiadmin111" },
+];
 
 const MADRASA_CLASSES = [
   { nameEn: "Nurani / Maktab", nameBn: "নূরানী / মক্তব", description: "Qaida, basic Quran reading" },
@@ -28,30 +29,29 @@ const MADRASA_CLASSES = [
   { nameEn: "Ifta / Takhasus", nameBn: "ইফতা / تخصص", description: "Mufti training (fatwa specialization)" },
 ];
 
-async function seedAdmin() {
-  const existing = await prisma.user.findUnique({
-    where: { phone: ADMIN_PHONE },
-  });
+async function seedAdmins() {
+  for (const a of ADMINS) {
+    const existing = await prisma.user.findUnique({
+      where: { phone: a.phone },
+    });
 
-  if (existing) {
-    console.log(`ℹ️  Admin account already exists (phone: ${ADMIN_PHONE})`);
-    return;
+    if (existing) {
+      console.log(`ℹ️  Admin already exists (phone: ${a.phone}) — skipped`);
+      continue;
+    }
+
+    const hashedPassword = await bcrypt.hash(a.password, 10);
+    const admin = await prisma.user.create({
+      data: {
+        name: a.name,
+        phone: a.phone,
+        password: hashedPassword,
+        role: "admin",
+      },
+    });
+
+    console.log(`✅ Admin created — phone: ${admin.phone}, password: ${a.password}`);
   }
-
-  const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
-
-  const admin = await prisma.user.create({
-    data: {
-      name: ADMIN_NAME,
-      phone: ADMIN_PHONE,
-      password: hashedPassword,
-      role: "admin",
-    },
-  });
-
-  console.log("✅ Admin account created!");
-  console.log(`   Phone:    ${admin.phone}`);
-  console.log(`   Password: ${ADMIN_PASSWORD}`);
 }
 
 async function seedClasses() {
@@ -78,7 +78,7 @@ async function seedClasses() {
 
 async function main() {
   console.log("🌱 Seeding database...\n");
-  await seedAdmin();
+  await seedAdmins();
   await seedClasses();
   console.log("\n✨ Seed complete!");
 }

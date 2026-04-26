@@ -37,6 +37,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Block public admin registration — admins must be seeded
+  if (role === "admin") {
+    return NextResponse.json(
+      {
+        error:
+          "Admin accounts cannot be registered publicly. Please contact the system administrator.",
+      },
+      { status: 403 }
+    );
+  }
+
   // Check if phone already exists
   const existing = await prisma.user.findUnique({ where: { phone } });
   if (existing) {

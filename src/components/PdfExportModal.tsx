@@ -18,10 +18,32 @@ export interface PdfColumn {
 }
 
 /**
+ * Manual Bangla pre-shaper for jsPDF (which doesn't do Indic script shaping).
+ *
+ * Left-side vowel signs in Bangla are STORED after the consonant but
+ * RENDERED before it. Browsers reorder via OpenType GSUB; jsPDF doesn't.
+ * We swap them in the source string so jsPDF emits glyphs in visual order.
+ *
+ * Handles:
+ *   - ি (U+09BF) — i-kar
+ *   - ে (U+09C7) — e-kar
+ *   - ৈ (U+09C8) — oi-kar
+ *
+ * Conjunct-aware: matches `(consonant + virama)* + consonant + leftVowel`
+ * and moves the vowel before the whole cluster.
+ */
+function shapeBangla(text: string): string {
+  return text.replace(
+    /((?:[ক-হড়-য়]্)*[ক-হড়-য়])([িেৈ])/g,
+    "$2$1"
+  );
+}
+
+/**
  * jsPDF + Noto Sans Bengali ignores Zero-Width Non-Joiner (ZWNJ, U+200C)
  * during text shaping, so "মাদ্‌রাসা" renders as the conjunct "মাদ্রাসা".
- * Workaround: split the string at every ZWNJ and render each segment as a
- * separate text run with a tiny gap. The active jsPDF font must already be set.
+ * Workaround: split at ZWNJ, render each segment with a tiny gap.
+ * Also pre-shapes each segment for left-side vowel signs.
  */
 function renderBanglaWithZwnj(
   doc: jsPDF,
@@ -30,12 +52,12 @@ function renderBanglaWithZwnj(
   y: number
 ): void {
   const ZWNJ = "‌";
-  if (!text.includes(ZWNJ)) {
-    doc.text(text, centerX, y, { align: "center" });
+  const shaped = shapeBangla(text);
+  if (!shaped.includes(ZWNJ)) {
+    doc.text(shaped, centerX, y, { align: "center" });
     return;
   }
-  const parts = text.split(ZWNJ);
-  // tiny gap between runs to visually break the conjunct (in pt)
+  const parts = shaped.split(ZWNJ);
   const gap = 0.4;
   const widths = parts.map((p) => doc.getTextWidth(p));
   const totalWidth = widths.reduce((a, b) => a + b, 0) + gap * (parts.length - 1);
@@ -110,11 +132,16 @@ export default function PdfExportModal({
   };
 
   const valueOf = (row: Record<string, unknown>, col: PdfColumn) => {
-    if (col.format) return col.format(row);
-    const v = row[col.key];
-    if (v === null || v === undefined) return "—";
-    if (v instanceof Date) return v.toLocaleDateString("en-GB");
-    return String(v);
+    let raw: string;
+    if (col.format) raw = col.format(row);
+    else {
+      const v = row[col.key];
+      if (v === null || v === undefined) raw = "—";
+      else if (v instanceof Date) raw = v.toLocaleDateString("en-GB");
+      else raw = String(v);
+    }
+    // Pre-shape any Bangla content for jsPDF
+    return shapeBangla(raw);
   };
 
   const generatePdf = async () => {
@@ -192,7 +219,7 @@ export default function PdfExportModal({
         doc.setFont(BANGLA_FONT_NAME, "normal");
         doc.setFontSize(11);
         doc.setTextColor(71, 85, 105); // slate-600
-        doc.text(titleBn, pageWidth / 2, nextY + 16, { align: "center" });
+        doc.text(shapeBangla(titleBn), pageWidth / 2, nextY + 16, { align: "center" });
         nextY += 16;
       }
 
