@@ -1,0 +1,42 @@
+# Node
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Next.js
+.next
+out
+
+# Generated Prisma client (regenerated inside the image)
+src/generated
+
+# Environment (passed at runtime, never baked in)
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE & OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Docs / Misc
+README.md
+CLAUDE.md
+AGENTS.md
+*.md
+
+# Build artifacts
+*.log
+coverage
+.turbo
+
+# Vercel
+.vercel
