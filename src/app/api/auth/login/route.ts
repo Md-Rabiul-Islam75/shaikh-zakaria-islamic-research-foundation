@@ -15,6 +15,9 @@ const roleLabel: Record<UserRole, string> = {
 export async function POST(request: NextRequest) {
   const { phone, password, role } = await request.json();
 
+  // Normalize phone by removing non-digit characters (handles dashes, spaces, +88 etc.)
+  const normalizedPhone = typeof phone === "string" ? phone.replace(/\D/g, "") : phone;
+
   if (!phone || !password || !role) {
     return NextResponse.json(
       { error: "Role, phone, and password are all required" },
@@ -29,7 +32,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { phone } });
+  const user = await prisma.user.findUnique({ where: { phone: normalizedPhone } });
   if (!user) {
     return NextResponse.json(
       { error: "No account found with this phone number" },

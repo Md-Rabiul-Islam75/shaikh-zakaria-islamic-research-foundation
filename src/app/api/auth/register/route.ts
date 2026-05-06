@@ -8,6 +8,9 @@ const VALID_ROLES: UserRole[] = ["student", "teacher", "editor", "admin"];
 export async function POST(request: NextRequest) {
   const { name, phone, password, confirmPassword, role } = await request.json();
 
+  // Normalize phone by removing non-digit characters so storage is consistent
+  const normalizedPhone = typeof phone === "string" ? phone.replace(/\D/g, "") : phone;
+
   // Validation
   if (!name || !phone || !password || !confirmPassword || !role) {
     return NextResponse.json(
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Check if phone already exists
-  const existing = await prisma.user.findUnique({ where: { phone } });
+  const existing = await prisma.user.findUnique({ where: { phone: normalizedPhone } });
   if (existing) {
     return NextResponse.json(
       { error: "A user with this phone number already exists" },
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.create({
-    data: { name, phone, password: hashedPassword, role },
+    data: { name, phone: normalizedPhone, password: hashedPassword, role },
   });
 
   // Create JWT token
