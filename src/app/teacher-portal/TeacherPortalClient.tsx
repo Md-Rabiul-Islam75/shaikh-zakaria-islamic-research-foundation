@@ -62,8 +62,11 @@ export default function TeacherPortalClient({
     qualification: "",
   });
 
-  // Both teachers and admins can modify; only students are blocked
-  const canModify = userRole === "teacher" || userRole === "admin";
+  // Teachers, editors, and admins can modify (add/edit) teachers
+  const canModify =
+    userRole === "teacher" || userRole === "admin" || userRole === "editor";
+  // Only teachers and admins can delete teachers (NOT editors)
+  const canDelete = userRole === "teacher" || userRole === "admin";
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -178,7 +181,7 @@ export default function TeacherPortalClient({
   };
 
   const handleDelete = async (teacher: Teacher) => {
-    if (!canModify) {
+    if (!canDelete) {
       toast.warning("Not allowed", "Only teachers and admins can delete teachers.");
       return;
     }
@@ -706,7 +709,7 @@ export default function TeacherPortalClient({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                           </svg>
                         </Link>
-                        {canModify && !isSelf && (
+                        {canDelete && !isSelf && (
                           <button
                             onClick={() => handleDelete(t)}
                             className="w-9 h-9 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center justify-center transition-colors"
@@ -818,7 +821,7 @@ export default function TeacherPortalClient({
                       >
                         View Profile
                       </Link>
-                      {canModify && !isSelf && (
+                      {canDelete && !isSelf && (
                         <button
                           onClick={() => handleDelete(t)}
                           className="w-8 h-8 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center justify-center transition-colors"

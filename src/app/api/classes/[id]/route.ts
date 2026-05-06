@@ -24,9 +24,14 @@ export async function PUT(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  if (user.role !== "teacher" && user.role !== "admin") {
+  // Editors, teachers, and admins can modify classes
+  if (
+    user.role !== "teacher" &&
+    user.role !== "admin" &&
+    user.role !== "editor"
+  ) {
     return NextResponse.json(
-      { error: "Only teachers and admins can modify classes" },
+      { error: "Only teachers, editors, and admins can modify classes" },
       { status: 403 }
     );
   }

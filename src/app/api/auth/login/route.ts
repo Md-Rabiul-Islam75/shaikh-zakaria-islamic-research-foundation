@@ -3,11 +3,12 @@ import { signToken, UserRole } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
-const VALID_ROLES: UserRole[] = ["student", "teacher", "admin"];
+const VALID_ROLES: UserRole[] = ["student", "teacher", "editor", "admin"];
 
 const roleLabel: Record<UserRole, string> = {
   student: "Student",
   teacher: "Teacher",
+  editor: "Editor",
   admin: "Admin",
 };
 

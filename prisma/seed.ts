@@ -11,6 +11,10 @@ const ADMINS = [
   { phone: "01552337781", name: "Administrator", password: "amiadmin111" },
 ];
 
+const EDITORS = [
+  { phone: "01716568029", name: "Editor", password: "amieditor123" },
+];
+
 const MADRASA_CLASSES = [
   { nameEn: "Nurani / Maktab", nameBn: "নূরানী / মক্তব", description: "Qaida, basic Quran reading" },
   { nameEn: "Nazera", nameBn: "নাজেরা", description: "Fluent Quran reading with Tajweed" },
@@ -54,6 +58,31 @@ async function seedAdmins() {
   }
 }
 
+async function seedEditors() {
+  for (const e of EDITORS) {
+    const existing = await prisma.user.findUnique({
+      where: { phone: e.phone },
+    });
+
+    if (existing) {
+      console.log(`ℹ️  Editor already exists (phone: ${e.phone}) — skipped`);
+      continue;
+    }
+
+    const hashedPassword = await bcrypt.hash(e.password, 10);
+    const editor = await prisma.user.create({
+      data: {
+        name: e.name,
+        phone: e.phone,
+        password: hashedPassword,
+        role: "editor",
+      },
+    });
+
+    console.log(`✅ Editor created — phone: ${editor.phone}, password: ${e.password}`);
+  }
+}
+
 async function seedClasses() {
   const count = await prisma.class.count();
   if (count > 0) {
@@ -79,6 +108,7 @@ async function seedClasses() {
 async function main() {
   console.log("🌱 Seeding database...\n");
   await seedAdmins();
+  await seedEditors();
   await seedClasses();
   console.log("\n✨ Seed complete!");
 }

@@ -3,7 +3,7 @@ import { signToken, UserRole } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
-const VALID_ROLES: UserRole[] = ["student", "teacher", "admin"];
+const VALID_ROLES: UserRole[] = ["student", "teacher", "editor", "admin"];
 
 export async function POST(request: NextRequest) {
   const { name, phone, password, confirmPassword, role } = await request.json();
@@ -37,12 +37,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Block public admin registration — admins must be seeded
-  if (role === "admin") {
+  // Block public admin/editor registration — these must be seeded by admin
+  if (role === "admin" || role === "editor") {
     return NextResponse.json(
       {
-        error:
-          "Admin accounts cannot be registered publicly. Please contact the system administrator.",
+        error: `${role === "admin" ? "Admin" : "Editor"} accounts cannot be registered publicly. Please contact the system administrator.`,
       },
       { status: 403 }
     );

@@ -62,7 +62,9 @@ export default async function Navbar() {
                           ? "bg-amber-400 text-amber-900"
                           : user.role === "teacher"
                             ? "bg-emerald-400 text-emerald-900"
-                            : "bg-sky-300 text-sky-900"
+                            : user.role === "editor"
+                              ? "bg-violet-400 text-violet-900"
+                              : "bg-sky-300 text-sky-900"
                       }`}
                     >
                       {user.role}

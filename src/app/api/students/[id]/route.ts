@@ -92,9 +92,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  if (user.role === "student") {
+  // Only teachers and admins can delete student records
+  if (user.role !== "teacher" && user.role !== "admin") {
     return NextResponse.json(
-      { error: "Students cannot delete student records. Only teachers and admins can." },
+      { error: "Only teachers and admins can delete student records." },
       { status: 403 }
     );
   }

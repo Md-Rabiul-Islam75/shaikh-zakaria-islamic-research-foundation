@@ -42,6 +42,7 @@ const actionLabels: Record<string, { verb: string; color: string }> = {
 const roleBadge: Record<string, string> = {
   student: "bg-sky-100 text-sky-700 border-sky-200",
   teacher: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  editor: "bg-violet-100 text-violet-700 border-violet-200",
   admin: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
@@ -220,7 +221,7 @@ export default function AdminPortalClient({
         </div>
 
         {/* Activity by Role */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -250,6 +251,22 @@ export default function AdminPortalClient({
             <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7l6-3 6 3v11l-6 3-6-3z" />
+              </svg>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                From Editors
+              </p>
+              <p className="text-xl font-extrabold text-violet-600 mt-0.5">
+                {countByRole.editor || 0}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Last 50 kept per editor</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </div>
           </div>
@@ -298,6 +315,7 @@ export default function AdminPortalClient({
               <option value="">All Roles</option>
               <option value="student">Students</option>
               <option value="teacher">Teachers</option>
+              <option value="editor">Editors</option>
               <option value="admin">Admins</option>
             </select>
             <select

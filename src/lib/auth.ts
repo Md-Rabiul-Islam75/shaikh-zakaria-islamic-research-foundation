@@ -5,7 +5,7 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback_secret_change_me"
 );
 
-export type UserRole = "student" | "teacher" | "admin";
+export type UserRole = "student" | "teacher" | "editor" | "admin";
 
 export interface JWTPayload {
   id: string;
@@ -44,7 +44,8 @@ export function canAccessPortal(
   portal: "student" | "teacher" | "admin"
 ): boolean {
   if (userRole === "admin") return true; // admin sees all
-  if (userRole === "teacher") return portal === "student" || portal === "teacher";
+  if (userRole === "teacher" || userRole === "editor")
+    return portal === "student" || portal === "teacher";
   if (userRole === "student") return portal === "student";
   return false;
 }

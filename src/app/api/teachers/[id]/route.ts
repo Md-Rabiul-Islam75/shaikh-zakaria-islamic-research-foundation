@@ -139,10 +139,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // BOTH teachers AND admins can delete teachers — only students are blocked
-  if (user.role === "student") {
+  // Only teachers and admins can delete teacher accounts
+  // (students and editors are blocked)
+  if (user.role !== "teacher" && user.role !== "admin") {
     return NextResponse.json(
-      { error: "Students cannot delete teacher accounts." },
+      { error: "Only teachers and admins can delete teacher accounts." },
       { status: 403 }
     );
   }

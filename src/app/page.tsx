@@ -100,7 +100,9 @@ const steps = [
 
 function canSeePortal(userRole: UserRole, portalRole: UserRole): boolean {
   if (userRole === "admin") return true;
-  if (userRole === "teacher") return portalRole === "student" || portalRole === "teacher";
+  // Editors and teachers both see student + teacher portals
+  if (userRole === "teacher" || userRole === "editor")
+    return portalRole === "student" || portalRole === "teacher";
   if (userRole === "student") return portalRole === "student";
   return false;
 }
@@ -199,7 +201,9 @@ export default async function Home() {
                 ? "As an admin, you have access to all three portals."
                 : user.role === "teacher"
                   ? "As a teacher, you can access student and teacher portals."
-                  : "As a student, you can access the student portal."}
+                  : user.role === "editor"
+                    ? "As an editor, you can access student and teacher portals."
+                    : "As a student, you can access the student portal."}
             </p>
           </div>
 

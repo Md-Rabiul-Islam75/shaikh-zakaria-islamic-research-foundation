@@ -53,7 +53,11 @@ export default function ClassStudentsClient({
   userName: string;
   classInfo: ClassInfo;
 }) {
-  const canModify = userRole === "teacher" || userRole === "admin";
+  // Edit: teachers, editors, and admins can edit student records
+  const canModify =
+    userRole === "teacher" || userRole === "admin" || userRole === "editor";
+  // Delete: only teachers and admins (NOT editors)
+  const canDelete = userRole === "teacher" || userRole === "admin";
 
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -199,7 +203,7 @@ export default function ClassStudentsClient({
   };
 
   const handleDelete = async (student: Student) => {
-    if (!canModify) {
+    if (!canDelete) {
       toast.warning(
         "Not allowed",
         "Only teachers and admins can delete students."
@@ -224,7 +228,8 @@ export default function ClassStudentsClient({
   };
 
   const openPromoteModal = async () => {
-    if (!canModify) {
+    if (!canDelete) {
+      // Promotion involves bulk class re-assignment — same level as delete
       toast.warning("Not allowed", "Only teachers and admins can promote students.");
       return;
     }
@@ -520,7 +525,7 @@ export default function ClassStudentsClient({
             {showForm ? "Close Form" : "Add Student"}
           </button>
 
-          {canModify && (
+          {canDelete && (
             <button
               onClick={openPromoteModal}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
@@ -916,18 +921,20 @@ export default function ClassStudentsClient({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleDelete(student);
-                          }}
-                          className="w-8 h-8 bg-gray-100 hover:bg-red-100 rounded-lg flex items-center justify-center group"
-                          title="Delete"
-                        >
-                          <svg className="w-4 h-4 text-gray-500 group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleDelete(student);
+                            }}
+                            className="w-8 h-8 bg-gray-100 hover:bg-red-100 rounded-lg flex items-center justify-center group"
+                            title="Delete"
+                          >
+                            <svg className="w-4 h-4 text-gray-500 group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

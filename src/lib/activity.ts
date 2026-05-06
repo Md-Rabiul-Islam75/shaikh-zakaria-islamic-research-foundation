@@ -19,6 +19,7 @@ export type ActivityTargetType = "student" | "teacher" | "class";
 const LIMIT_BY_ROLE: Record<UserRole, number> = {
   student: 100,
   teacher: 30,
+  editor: 50,
   admin: 25,
 };
 
