@@ -27,6 +27,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  if (user.role === "student") {
+    return NextResponse.json(
+      { error: "Students cannot create student records." },
+      { status: 403 }
+    );
+  }
+
   const body = await request.json();
 
   if (!body.classId) {

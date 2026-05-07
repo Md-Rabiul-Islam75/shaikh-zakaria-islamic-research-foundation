@@ -361,30 +361,6 @@ export default function ClassStudentsClient({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Student confirmation before first save
-    if (!editingStudent && userRole === "student") {
-      const result = await Swal.fire({
-        title: "Are you sure everything is correct?",
-        html: `
-          <div class="text-left text-sm space-y-1">
-            <p><strong>Name:</strong> ${form.studentNameEn}</p>
-            <p><strong>Class:</strong> ${classInfo.nameEn} (${classInfo.nameBn})</p>
-            <p><strong>Session:</strong> ${selectedYear}</p>
-            <p><strong>Father:</strong> ${form.fatherName}</p>
-            <p><strong>Phone:</strong> ${form.phone}</p>
-          </div>
-          <p class="mt-3 text-xs text-amber-600">⚠️ As a student, you cannot modify or delete this record after saving. Please double-check all details.</p>
-        `,
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Add Student",
-        cancelButtonText: "Let me review",
-        confirmButtonColor: "#2563eb",
-        cancelButtonColor: "#6b7280",
-      });
-      if (!result.isConfirmed) return;
-    }
-
     setSubmitting(true);
 
     let imageUrl = editingStudent?.imageUrl || null;
@@ -503,27 +479,29 @@ export default function ClassStudentsClient({
             </select>
           </div>
 
-          <button
-            onClick={() => {
-              if (showForm) {
-                setShowForm(false);
-                resetForm();
-              } else {
-                openAddForm();
-              }
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={showForm ? "M6 18L18 6M6 6l12 12" : "M12 4v16m8-8H4"}
-              />
-            </svg>
-            {showForm ? "Close Form" : "Add Student"}
-          </button>
+          {canModify && (
+            <button
+              onClick={() => {
+                if (showForm) {
+                  setShowForm(false);
+                  resetForm();
+                } else {
+                  openAddForm();
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={showForm ? "M6 18L18 6M6 6l12 12" : "M12 4v16m8-8H4"}
+                />
+              </svg>
+              {showForm ? "Close Form" : "Add Student"}
+            </button>
+          )}
 
           {canDelete && (
             <button
@@ -537,30 +515,32 @@ export default function ClassStudentsClient({
             </button>
           )}
 
-          <button
-            onClick={() => setShowPdfModal(true)}
-            className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h4a4 4 0 014 4v2M7 7h10M7 11h4m-4 4h2m6 6v-2m0 2h2m-2 0h-2M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            Export PDF
-          </button>
+          {canModify && (
+            <button
+              onClick={() => setShowPdfModal(true)}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h4a4 4 0 014 4v2M7 7h10M7 11h4m-4 4h2m6 6v-2m0 2h2m-2 0h-2M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Export PDF
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Student Notice */}
+      {/* Read-only notice for students */}
       {!canModify && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <svg className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <h3 className="text-sm font-semibold text-amber-800">Student Access Notice</h3>
-            <p className="text-sm text-amber-700 mt-0.5">
-              You can add new students, but cannot edit or delete existing
-              records. A confirmation will be shown before saving — please
-              double-check all details.
+            <h3 className="text-sm font-semibold text-blue-800">View-only access</h3>
+            <p className="text-sm text-blue-700 mt-0.5">
+              Browse the class roster and tap a student to see their details.
+              Adding, editing, and exporting are reserved for editors,
+              teachers, and admins.
             </p>
           </div>
         </div>

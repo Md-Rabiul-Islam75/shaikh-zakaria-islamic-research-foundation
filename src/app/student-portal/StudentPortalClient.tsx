@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast, modal } from "@/lib/toast";
-import Swal from "sweetalert2";
 import { UserRole } from "@/lib/auth";
 
 interface ClassItem {
@@ -108,28 +107,6 @@ export default function StudentPortalClient({
       return;
     }
 
-    // For students creating classes — show confirmation modal
-    if (!editing && userRole === "student") {
-      const result = await Swal.fire({
-        title: "Add this class?",
-        html: `
-          <div class="text-left space-y-2 text-sm">
-            <p><strong>English:</strong> ${form.nameEn}</p>
-            <p><strong>Bangla:</strong> ${form.nameBn}</p>
-            ${form.description ? `<p><strong>Description:</strong> ${form.description}</p>` : ""}
-          </div>
-          <p class="mt-3 text-xs text-amber-600">⚠️ Please double-check everything. Students cannot modify or delete classes after creation.</p>
-        `,
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Add Class",
-        cancelButtonText: "Let me review",
-        confirmButtonColor: "#2563eb",
-        cancelButtonColor: "#6b7280",
-      });
-      if (!result.isConfirmed) return;
-    }
-
     setSubmitting(true);
 
     try {
@@ -221,28 +198,30 @@ export default function StudentPortalClient({
             </p>
           </div>
         </div>
-        <button
-          onClick={openAddForm}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Class
-        </button>
+        {canModify && (
+          <button
+            onClick={openAddForm}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Class
+          </button>
+        )}
       </div>
 
-      {/* Restriction Notice for Students */}
+      {/* Read-only notice for students */}
       {!canModify && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <svg className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <h3 className="text-sm font-semibold text-amber-800">Student Access Notice</h3>
-            <p className="text-sm text-amber-700 mt-0.5">
-              You can add new classes, but only teachers and admins can edit or
-              delete existing classes. Please double-check before saving.
+            <h3 className="text-sm font-semibold text-blue-800">View-only access</h3>
+            <p className="text-sm text-blue-700 mt-0.5">
+              Browse classes and view student details. Adding or editing
+              classes is reserved for editors, teachers, and admins.
             </p>
           </div>
         </div>
@@ -261,13 +240,19 @@ export default function StudentPortalClient({
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-700 mb-1">No classes yet</h3>
-          <p className="text-sm text-gray-500 mb-4">Be the first to add a class.</p>
-          <button
-            onClick={openAddForm}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors"
-          >
-            Add First Class
-          </button>
+          <p className="text-sm text-gray-500 mb-4">
+            {canModify
+              ? "Be the first to add a class."
+              : "Classes will appear here once they are added."}
+          </p>
+          {canModify && (
+            <button
+              onClick={openAddForm}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors"
+            >
+              Add First Class
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
