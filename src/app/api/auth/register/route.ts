@@ -3,7 +3,9 @@ import { signToken, UserRole } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
-const VALID_ROLES: UserRole[] = ["student", "teacher", "editor", "admin"];
+// Only students can self-register publicly. Teacher/editor accounts are
+// created by an admin from the Admin Portal; admins are seeded.
+const VALID_ROLES: UserRole[] = ["student"];
 
 export async function POST(request: NextRequest) {
   const { name, phone, password, confirmPassword, role } = await request.json();
@@ -35,16 +37,9 @@ export async function POST(request: NextRequest) {
 
   if (!VALID_ROLES.includes(role)) {
     return NextResponse.json(
-      { error: "Invalid role" },
-      { status: 400 }
-    );
-  }
-
-  // Block public admin/editor registration — these must be seeded by admin
-  if (role === "admin" || role === "editor") {
-    return NextResponse.json(
       {
-        error: `${role === "admin" ? "Admin" : "Editor"} accounts cannot be registered publicly. Please contact the system administrator.`,
+        error:
+          "Only student accounts can be registered publicly. Teacher, editor, and admin accounts are created by the administrator.",
       },
       { status: 403 }
     );

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import CreateUserSection from "./CreateUserSection";
 
 interface ActivityUser {
   id: string;
@@ -37,6 +38,7 @@ const actionLabels: Record<string, { verb: string; color: string }> = {
   CREATE_TEACHER: { verb: "added teacher", color: "bg-indigo-100 text-indigo-700" },
   UPDATE_TEACHER: { verb: "updated teacher", color: "bg-amber-100 text-amber-700" },
   DELETE_TEACHER: { verb: "deleted teacher", color: "bg-red-100 text-red-700" },
+  CREATE_EDITOR: { verb: "added editor", color: "bg-violet-100 text-violet-700" },
 };
 
 const roleBadge: Record<string, string> = {
@@ -221,23 +223,7 @@ export default function AdminPortalClient({
         </div>
 
         {/* Activity by Role */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                From Students
-              </p>
-              <p className="text-xl font-extrabold text-sky-600 mt-0.5">
-                {countByRole.student || 0}
-              </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Last 100 kept per student</p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -262,7 +248,7 @@ export default function AdminPortalClient({
               <p className="text-xl font-extrabold text-violet-600 mt-0.5">
                 {countByRole.editor || 0}
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Last 50 kept per editor</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Last 100 kept per editor</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,7 +264,7 @@ export default function AdminPortalClient({
               <p className="text-xl font-extrabold text-amber-600 mt-0.5">
                 {countByRole.admin || 0}
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Last 25 kept per admin</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Last 100 kept per admin</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,6 +273,9 @@ export default function AdminPortalClient({
             </div>
           </div>
         </div>
+
+        {/* Create staff credentials */}
+        <CreateUserSection />
 
         {/* Filters */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 mb-5">
@@ -313,7 +302,6 @@ export default function AdminPortalClient({
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-amber-500 outline-none"
             >
               <option value="">All Roles</option>
-              <option value="student">Students</option>
               <option value="teacher">Teachers</option>
               <option value="editor">Editors</option>
               <option value="admin">Admins</option>
@@ -341,6 +329,7 @@ export default function AdminPortalClient({
               <option value="CREATE_TEACHER">Create Teacher</option>
               <option value="UPDATE_TEACHER">Update Teacher</option>
               <option value="DELETE_TEACHER">Delete Teacher</option>
+              <option value="CREATE_EDITOR">Create Editor</option>
               <option value="CREATE_CLASS">Create Class</option>
               <option value="UPDATE_CLASS">Update Class</option>
               <option value="DELETE_CLASS">Delete Class</option>
