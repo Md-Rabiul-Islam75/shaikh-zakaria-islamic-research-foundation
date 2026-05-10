@@ -35,8 +35,8 @@ const MADRASA_CLASSES = [
 
 async function seedAdmins() {
   for (const a of ADMINS) {
-    const existing = await prisma.user.findUnique({
-      where: { phone: a.phone },
+    const existing = await prisma.user.findFirst({
+      where: { phone: a.phone, createdVia: "seeded", role: "admin" },
     });
 
     if (existing) {
@@ -51,6 +51,7 @@ async function seedAdmins() {
         phone: a.phone,
         password: hashedPassword,
         role: "admin",
+        createdVia: "seeded",
       },
     });
 
@@ -60,8 +61,8 @@ async function seedAdmins() {
 
 async function seedEditors() {
   for (const e of EDITORS) {
-    const existing = await prisma.user.findUnique({
-      where: { phone: e.phone },
+    const existing = await prisma.user.findFirst({
+      where: { phone: e.phone, createdVia: "admin_portal", role: "editor" },
     });
 
     if (existing) {
@@ -76,6 +77,7 @@ async function seedEditors() {
         phone: e.phone,
         password: hashedPassword,
         role: "editor",
+        createdVia: "admin_portal",
       },
     });
 

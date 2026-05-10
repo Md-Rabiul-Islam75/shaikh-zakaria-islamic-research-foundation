@@ -20,7 +20,10 @@ export async function GET() {
   }
 
   const accounts = await prisma.user.findMany({
-    where: { role: { in: ["teacher", "editor"] } },
+    where: {
+      role: { in: ["teacher", "editor"] },
+      createdVia: "admin_portal",
+    },
     select: {
       id: true,
       name: true,
@@ -85,12 +88,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { phone: normalizedPhone },
+  const existing = await prisma.user.findFirst({
+    where: { phone: normalizedPhone, createdVia: "admin_portal" },
   });
   if (existing) {
     return NextResponse.json(
-      { error: "A user with this phone number already exists" },
+      { error: "A staff account with this phone number already exists" },
       { status: 409 }
     );
   }
@@ -103,6 +106,7 @@ export async function POST(request: NextRequest) {
       phone: normalizedPhone,
       password: hashedPassword,
       role,
+      createdVia: "admin_portal",
     },
     select: {
       id: true,

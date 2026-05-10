@@ -45,11 +45,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check if phone already exists
-  const existing = await prisma.user.findUnique({ where: { phone: normalizedPhone } });
+  // Only block duplicates within self-registered student accounts — the same
+  // phone may legitimately exist as an admin-portal staff login or in the
+  // teacher portal directory.
+  const existing = await prisma.user.findFirst({
+    where: { phone: normalizedPhone, createdVia: "self_register" },
+  });
   if (existing) {
     return NextResponse.json(
-      { error: "A user with this phone number already exists" },
+      { error: "A student account with this phone number already exists" },
       { status: 409 }
     );
   }
@@ -58,7 +62,13 @@ export async function POST(request: NextRequest) {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.create({
-    data: { name, phone: normalizedPhone, password: hashedPassword, role },
+    data: {
+      name,
+      phone: normalizedPhone,
+      password: hashedPassword,
+      role,
+      createdVia: "self_register",
+    },
   });
 
   // Create JWT token

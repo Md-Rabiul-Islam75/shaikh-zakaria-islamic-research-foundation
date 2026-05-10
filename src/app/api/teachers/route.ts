@@ -18,7 +18,7 @@ export async function GET() {
   }
 
   const teachers = await prisma.user.findMany({
-    where: { role: "teacher" },
+    where: { role: "teacher", createdVia: "teacher_portal" },
     select: {
       id: true,
       name: true,
@@ -88,10 +88,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const existing = await prisma.user.findUnique({ where: { phone } });
+  // Only check for duplicates within the teacher portal directory itself —
+  // the same phone may already exist as an admin-portal staff account or as
+  // a self-registered student, and that is intentionally allowed.
+  const existing = await prisma.user.findFirst({
+    where: { phone, createdVia: "teacher_portal" },
+  });
   if (existing) {
     return NextResponse.json(
-      { error: "A user with this phone number already exists" },
+      { error: "A teacher with this phone number already exists in the directory" },
       { status: 409 }
     );
   }
@@ -107,6 +112,7 @@ export async function POST(request: NextRequest) {
       designation: designation?.trim() || null,
       subject: subject?.trim() || null,
       qualification: qualification?.trim() || null,
+      createdVia: "teacher_portal",
     },
     select: {
       id: true,

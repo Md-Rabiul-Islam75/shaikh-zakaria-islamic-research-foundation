@@ -10,7 +10,10 @@ datasource db {
 model User {
   id                  String    @id @default(cuid())
   name                String
-  phone               String    @unique
+  // Phone is unique per source (createdVia). The same phone can appear once
+  // per source — e.g. a person can be both an admin-portal login (admin_portal)
+  // and a teacher-portal directory entry (teacher_portal) without conflict.
+  phone               String
   password            String
   role                String    @default("student") // student | teacher | admin
 
@@ -28,10 +31,17 @@ model User {
   bio                 String?   // short bio
   responsibleClasses  String?   // JSON string array of class IDs
 
+  // Tracks where the account was created. Determines whether the account
+  // appears in the Admin Portal "Staff Accounts" list.
+  // Values: admin_portal | teacher_portal | self_register | seeded
+  createdVia          String?
+
   activities          ActivityLog[]
 
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+
+  @@unique([phone, createdVia])
 }
 
 model ActivityLog {

@@ -61,12 +61,12 @@ export async function PUT(
   }
 
   if (normalizedPhone !== target.phone) {
-    const existing = await prisma.user.findUnique({
-      where: { phone: normalizedPhone },
+    const existing = await prisma.user.findFirst({
+      where: { phone: normalizedPhone, createdVia: "admin_portal" },
     });
     if (existing) {
       return NextResponse.json(
-        { error: "Another user already has this phone number" },
+        { error: "Another staff account already has this phone number" },
         { status: 409 }
       );
     }
