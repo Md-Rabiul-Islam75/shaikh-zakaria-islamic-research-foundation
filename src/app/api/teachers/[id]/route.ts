@@ -76,8 +76,34 @@ export async function PUT(
     return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
   }
 
+  // If phone is being changed, ensure it's not taken by another user
+  if (
+    body.phone !== undefined &&
+    typeof body.phone === "string" &&
+    body.phone.trim() !== ""
+  ) {
+    const newPhone = body.phone.trim();
+    if (newPhone !== target.phone) {
+      const conflict = await prisma.user.findUnique({
+        where: { phone: newPhone },
+      });
+      if (conflict) {
+        return NextResponse.json(
+          {
+            error:
+              "A user with this phone number already exists. Please use a different number.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+  }
+
   const data: Record<string, unknown> = {};
   if (body.name !== undefined) data.name = body.name;
+  if (body.phone !== undefined && body.phone.trim() !== "") {
+    data.phone = body.phone.trim();
+  }
   if (body.designation !== undefined) data.designation = body.designation || null;
   if (body.qualification !== undefined) data.qualification = body.qualification || null;
   if (body.subject !== undefined) data.subject = body.subject || null;

@@ -68,6 +68,7 @@ export default function TeacherDetailsClient({
 
   const [form, setForm] = useState({
     name: teacher.name,
+    phone: teacher.phone,
     designation: teacher.designation || "",
     qualification: teacher.qualification || "",
     subject: teacher.subject || "",
@@ -309,7 +310,7 @@ export default function TeacherDetailsClient({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
+              <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Name *</label>
                 <input
                   type="text"
@@ -318,6 +319,20 @@ export default function TeacherDetailsClient({
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Phone *</label>
+                <input
+                  type="tel"
+                  required
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="01XXX-XXXXXX"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  This is also the login phone — must be unique.
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Designation</label>
