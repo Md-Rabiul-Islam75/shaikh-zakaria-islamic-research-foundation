@@ -76,7 +76,10 @@ export async function PUT(
     return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
   }
 
-  // If phone is being changed, ensure it's not taken by another user
+  // If phone is being changed, ensure it's not taken by another record in
+  // the same source (teacher portal directories only block teacher portal
+  // duplicates — a matching admin-portal staff account on the same phone is
+  // intentionally allowed).
   if (
     body.phone !== undefined &&
     typeof body.phone === "string" &&
@@ -84,14 +87,18 @@ export async function PUT(
   ) {
     const newPhone = body.phone.trim();
     if (newPhone !== target.phone) {
-      const conflict = await prisma.user.findUnique({
-        where: { phone: newPhone },
+      const conflict = await prisma.user.findFirst({
+        where: {
+          phone: newPhone,
+          createdVia: target.createdVia,
+          id: { not: target.id },
+        },
       });
       if (conflict) {
         return NextResponse.json(
           {
             error:
-              "A user with this phone number already exists. Please use a different number.",
+              "Another teacher in this list already uses that phone number.",
           },
           { status: 409 }
         );
