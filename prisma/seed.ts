@@ -7,7 +7,7 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 const ADMINS = [
-  { phone: "01776627800", name: "Administrator", password: "amiadmin111" },
+  { phone: "01776627800", name: "Administrator", password: "amiadmin" },
   { phone: "01552337781", name: "Administrator", password: "amiadmin111" },
 ];
 
@@ -39,12 +39,17 @@ async function seedAdmins() {
       where: { phone: a.phone, createdVia: "seeded", role: "admin" },
     });
 
+    const hashedPassword = await bcrypt.hash(a.password, 10);
+
     if (existing) {
-      console.log(`ℹ️  Admin already exists (phone: ${a.phone}) — skipped`);
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { name: a.name, password: hashedPassword },
+      });
+      console.log(`♻️  Admin updated — phone: ${a.phone}, password: ${a.password}`);
       continue;
     }
 
-    const hashedPassword = await bcrypt.hash(a.password, 10);
     const admin = await prisma.user.create({
       data: {
         name: a.name,

@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 className="text-white text-lg font-semibold mb-3 leading-snug">
-              জামিয়া দারুল উলুম নুরিয়া মাদ্‌রাসা ও এতিমখানা
+              শায়খ যাকারিয়া ইসলামিক রিসার্চ সেন্টার
             </h3>
             <p className="text-sm text-gray-400">
               A complete management platform for our Madrasa. Manage classes,
@@ -51,8 +51,8 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} জামিয়া দারুল উলুম নুরিয়া মাদ্‌রাসা ও
-          এতিমখানা. All rights reserved.
+          &copy; {new Date().getFullYear()} শায়খ যাকারিয়া ইসলামিক রিসার্চ
+          সেন্টার. All rights reserved.
         </div>
       </div>
     </footer>

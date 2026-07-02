@@ -29,12 +29,12 @@ export default async function Navbar() {
               </div>
               {/* Full name on md+, shorter on mobile */}
               <span className="hidden md:inline text-white text-lg lg:text-xl font-bold tracking-wide">
-                জামিয়া দারুল উলুম নুরিয়া মাদ্‌রাসা ও এতিমখানা
+                শায়খ যাকারিয়া ইসলামিক রিসার্চ সেন্টার
               </span>
               <span className="md:hidden text-white text-sm sm:text-base font-bold tracking-wide leading-tight line-clamp-2">
-                জামিয়া দারুল উলুম
+                শায়খ যাকারিয়া
                 <span className="block text-[11px] sm:text-xs font-medium text-blue-100">
-                  নুরিয়া মাদ্‌রাসা ও এতিমখানা
+                  ইসলামিক রিসার্চ সেন্টার
                 </span>
               </span>
             </Link>
