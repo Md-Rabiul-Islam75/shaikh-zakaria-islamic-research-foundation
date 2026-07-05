@@ -105,14 +105,26 @@ function drawCertificatePage(
   doc.line(70, 122, w - 70, 122);
 
   // === Title ===
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(38);
+  // Elegant serif bold-italic (jsPDF has no script font). Green + bold kept,
+  // with a soft shadow for depth so it reads as a gorgeous formal title.
+  doc.setFont("times", "bolditalic");
+  doc.setFontSize(46);
+  doc.setTextColor(198, 220, 205); // faint green shadow
+  doc.text("Certificate", cx + 1.4, 171.4, { align: "center" });
   doc.setTextColor(GREEN.r, GREEN.g, GREEN.b);
-  doc.text("CERTIFICATE", cx, 168, { align: "center" });
-  // Small flourish under title
+  doc.text("Certificate", cx, 170, { align: "center" });
+
+  // Decorative flourish under the title: line — diamond — line
   doc.setDrawColor(GREEN.r, GREEN.g, GREEN.b);
-  doc.setLineWidth(1.2);
-  doc.line(cx - 70, 178, cx + 70, 178);
+  doc.setLineWidth(1);
+  doc.line(cx - 95, 184, cx - 12, 184);
+  doc.line(cx + 12, 184, cx + 95, 184);
+  doc.setFillColor(GREEN.r, GREEN.g, GREEN.b);
+  doc.triangle(cx - 6, 184, cx, 179.5, cx + 6, 184, "F");
+  doc.triangle(cx - 6, 184, cx, 188.5, cx + 6, 184, "F");
+  // Small end dots on the flourish
+  doc.circle(cx - 95, 184, 1.6, "F");
+  doc.circle(cx + 95, 184, 1.6, "F");
 
   // Subtitle — Bangla
   doc.setFont(BANGLA_FONT_NAME, "normal");
@@ -155,28 +167,25 @@ function drawCertificatePage(
     { align: "center" }
   );
   y += 20;
-  // Class name rendered in bold (rest of the line normal), kept centered by
-  // measuring each segment and drawing them left-to-right.
+  // Class name + roll rendered in bold (rest of the line normal), kept
+  // centered by measuring each segment and drawing them left-to-right.
   const prefix = "for successfully completing the final class ";
-  const className = student.classNameEn;
-  const suffix = ` (Roll ${student.roll})`;
+  const highlight = `${student.classNameEn} (Roll ${student.roll})`;
   doc.setFont("helvetica", "normal");
   const wPrefix = doc.getTextWidth(prefix);
-  const wSuffix = doc.getTextWidth(suffix);
   doc.setFont("helvetica", "bold");
-  const wClass = doc.getTextWidth(className);
-  let lx = cx - (wPrefix + wClass + wSuffix) / 2;
+  const wHighlight = doc.getTextWidth(highlight);
+  let lx = cx - (wPrefix + wHighlight) / 2;
   doc.setFont("helvetica", "normal");
   doc.text(prefix, lx, y);
   lx += wPrefix;
   doc.setFont("helvetica", "bold");
-  doc.text(className, lx, y);
-  lx += wClass;
-  doc.setFont("helvetica", "normal");
-  doc.text(suffix, lx, y);
+  doc.text(highlight, lx, y);
   y += 20;
+  // Reset to normal so only the class + roll stay bold.
+  doc.setFont("helvetica", "normal");
   doc.text(
-    `in the session ${student.session} with the highest marks.`,
+    `of this institution in the session ${student.session}.`,
     cx,
     y,
     { align: "center" }

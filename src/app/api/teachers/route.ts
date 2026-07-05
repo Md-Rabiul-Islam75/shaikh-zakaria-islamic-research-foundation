@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, UserRole } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -60,39 +59,32 @@ export async function POST(request: NextRequest) {
   const {
     name,
     phone,
-    password,
-    confirmPassword,
     designation,
     subject,
     qualification,
   } = await request.json();
 
-  if (!name?.trim() || !phone?.trim() || !password || !confirmPassword) {
+  if (!name?.trim() || !phone?.trim()) {
     return NextResponse.json(
-      { error: "Name, phone, password and confirm password are required" },
+      { error: "Name and phone are required" },
       { status: 400 }
     );
   }
 
-  if (password !== confirmPassword) {
+  // Store phones as digits-only so they match everywhere (login, admin, dedup).
+  const normalizedPhone = String(phone).replace(/\D/g, "");
+  if (!normalizedPhone) {
     return NextResponse.json(
-      { error: "Passwords do not match" },
-      { status: 400 }
-    );
-  }
-
-  if (password.length < 6) {
-    return NextResponse.json(
-      { error: "Password must be at least 6 characters" },
+      { error: "Phone number must contain digits" },
       { status: 400 }
     );
   }
 
   // Only check for duplicates within the teacher portal directory itself —
-  // the same phone may already exist as an admin-portal staff account or as
-  // a self-registered student, and that is intentionally allowed.
+  // the same phone may already exist as an admin-portal staff account, and
+  // that is intentionally allowed.
   const existing = await prisma.user.findFirst({
-    where: { phone, createdVia: "teacher_portal" },
+    where: { phone: normalizedPhone, createdVia: "teacher_portal" },
   });
   if (existing) {
     return NextResponse.json(
@@ -101,13 +93,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-
+  // Teacher Portal entries are directory/profile records only — they are NOT
+  // login accounts. An empty password can never match at login (bcrypt.compare
+  // against "" is always false). To give a teacher a login, an admin creates a
+  // Staff Account in the Admin Portal and shares that password.
   const teacher = await prisma.user.create({
     data: {
       name: name.trim(),
-      phone: phone.trim(),
-      password: hashedPassword,
+      phone: normalizedPhone,
+      password: "",
       role: "teacher",
       designation: designation?.trim() || null,
       subject: subject?.trim() || null,

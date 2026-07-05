@@ -58,11 +58,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
   }
 
-  // Auto-assign roll: find the highest roll in this class+year, then +1
+  // Auto-assign roll: highest roll among ACTIVE students in this class+year,
+  // then +1. Graduated students are excluded, so once a batch has graduated
+  // and left the roster, a fresh student starts again at roll 1.
   const lastStudent = await prisma.student.findFirst({
     where: {
       classId: body.classId,
       admissionYear: parseInt(body.admissionYear),
+      status: "active",
     },
     orderBy: { roll: "desc" },
     select: { roll: true },

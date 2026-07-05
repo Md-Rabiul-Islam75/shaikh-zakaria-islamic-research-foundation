@@ -59,6 +59,9 @@ export async function POST(request: NextRequest) {
 
   let user = null;
   for (const c of sameRole) {
+    // Profile-only records (e.g. Teacher Portal directory entries) have an
+    // empty password and are never valid login accounts.
+    if (!c.password) continue;
     if (await bcrypt.compare(password, c.password)) {
       user = c;
       break;
