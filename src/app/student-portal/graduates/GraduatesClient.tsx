@@ -23,7 +23,7 @@ export default function GraduatesClient({
   userRole,
   userName,
 }: {
-  userRole: UserRole;
+  userRole: UserRole | null;
   userName: string;
 }) {
   const [graduates, setGraduates] = useState<Graduate[]>([]);
@@ -114,7 +114,7 @@ export default function GraduatesClient({
                 Graduates
               </span>
               <span className="text-xs text-gray-500">
-                {userName} ({userRole})
+                {userRole ? `${userName} (${userRole})` : "Guest"}
               </span>
             </div>
             <h1 className="text-3xl font-bold text-gray-800">Graduates / Alumni</h1>

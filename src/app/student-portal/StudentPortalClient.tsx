@@ -36,7 +36,7 @@ export default function StudentPortalClient({
   userRole,
   userName,
 }: {
-  userRole: UserRole;
+  userRole: UserRole | null;
   userName: string;
 }) {
   const [classes, setClasses] = useState<ClassItem[]>([]);
@@ -189,7 +189,11 @@ export default function StudentPortalClient({
                 Student Portal
               </span>
               <span className="text-xs text-gray-500">
-                Logged in as <strong>{userName}</strong> ({userRole})
+                {userRole ? (
+                  <>Logged in as <strong>{userName}</strong> ({userRole})</>
+                ) : (
+                  <>Viewing as <strong>Guest</strong></>
+                )}
               </span>
             </div>
             <h1 className="text-3xl font-bold text-gray-800">All Classes</h1>

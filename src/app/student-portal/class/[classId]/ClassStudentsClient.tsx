@@ -50,7 +50,7 @@ export default function ClassStudentsClient({
   userName,
   classInfo,
 }: {
-  userRole: UserRole;
+  userRole: UserRole | null;
   userName: string;
   classInfo: ClassInfo;
 }) {
@@ -571,7 +571,7 @@ export default function ClassStudentsClient({
                 Student Portal
               </span>
               <span className="text-xs text-gray-500">
-                {userName} ({userRole})
+                {userRole ? `${userName} (${userRole})` : "Guest"}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 truncate">

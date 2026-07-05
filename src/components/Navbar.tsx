@@ -39,12 +39,6 @@ export default async function Navbar() {
               </span>
             </Link>
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <Link
-                href="/"
-                className="text-blue-100 hover:text-white transition-colors font-medium text-sm hidden sm:inline"
-              >
-                Home
-              </Link>
               {user ? (
                 <>
                   <div className="hidden lg:flex items-center gap-2 bg-blue-800 px-3 py-1.5 rounded-full">

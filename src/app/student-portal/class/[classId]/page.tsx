@@ -1,15 +1,15 @@
 import { getCurrentUser } from "@/lib/auth";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ClassStudentsClient from "./ClassStudentsClient";
 
+// Public page — no login required. Guests get a read-only view.
 export default async function ClassStudentsPage({
   params,
 }: {
   params: Promise<{ classId: string }>;
 }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/login?redirect=/student-portal");
 
   const { classId } = await params;
   const cls = await prisma.class.findUnique({ where: { id: classId } });
@@ -17,8 +17,8 @@ export default async function ClassStudentsPage({
 
   return (
     <ClassStudentsClient
-      userRole={user.role}
-      userName={user.name}
+      userRole={user?.role ?? null}
+      userName={user?.name ?? "Guest"}
       classInfo={{
         id: cls.id,
         nameEn: cls.nameEn,

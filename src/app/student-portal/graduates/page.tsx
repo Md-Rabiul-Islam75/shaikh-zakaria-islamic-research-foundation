@@ -1,10 +1,14 @@
 import { getCurrentUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import GraduatesClient from "./GraduatesClient";
 
+// Public page — no login required. Guests get a read-only view.
 export default async function GraduatesPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login?redirect=/student-portal/graduates");
 
-  return <GraduatesClient userRole={user.role} userName={user.name} />;
+  return (
+    <GraduatesClient
+      userRole={user?.role ?? null}
+      userName={user?.name ?? "Guest"}
+    />
+  );
 }

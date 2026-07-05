@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 
-const STUDENT_PORTAL = ["/student-portal", "/student"];
+// The student portal (/student-portal, /student) is PUBLIC — anyone can view it
+// without logging in. Only staff areas below require authentication.
 const TEACHER_PORTAL = ["/teacher-portal", "/teacher", "/teachers"];
 const ADMIN_PORTAL = ["/admin-portal", "/admin"];
 const AUTH_PATHS = ["/login"];
@@ -11,7 +12,6 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("auth-token")?.value;
   const user = token ? await verifyToken(token) : null;
 
-  const inStudentPortal = STUDENT_PORTAL.some((p) => pathname.startsWith(p));
   const inTeacherPortal = TEACHER_PORTAL.some((p) => pathname.startsWith(p));
   const inAdminPortal = ADMIN_PORTAL.some((p) => pathname.startsWith(p));
   const isAuthPath = AUTH_PATHS.some((p) => pathname.startsWith(p));
@@ -21,8 +21,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Not logged in + protected route → redirect to login
-  if ((inStudentPortal || inTeacherPortal || inAdminPortal) && !user) {
+  // Not logged in + protected (staff) route → redirect to login
+  if ((inTeacherPortal || inAdminPortal) && !user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
@@ -48,11 +48,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/student-portal/:path*",
     "/teacher-portal/:path*",
     "/teacher/:path*",
     "/admin-portal/:path*",
-    "/student/:path*",
     "/teachers/:path*",
     "/admin/:path*",
     "/login",

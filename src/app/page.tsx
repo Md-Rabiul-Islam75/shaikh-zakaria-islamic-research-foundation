@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getCurrentUser, UserRole } from "@/lib/auth";
+import TypewriterText from "@/components/TypewriterText";
 
 const portals: {
   role: UserRole;
@@ -109,9 +110,13 @@ function canSeePortal(userRole: UserRole, portalRole: UserRole): boolean {
 
 export default async function Home() {
   const user = await getCurrentUser();
-  const visiblePortals = user
-    ? portals.filter((p) => canSeePortal(user.role, p.role))
-    : [];
+  // The Student Portal card is public — always visible. Teacher/Admin cards
+  // only appear for logged-in users with the right role.
+  const visiblePortals = portals.filter((p) => {
+    if (p.role === "student") return true;
+    if (!user) return false;
+    return canSeePortal(user.role, p.role);
+  });
 
   return (
     <div>
@@ -127,29 +132,10 @@ export default async function Home() {
         {/* Neutral dark overlay for text readability (no blue tint) */}
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 flex flex-col items-center justify-center min-h-[400px] sm:h-full text-center px-4 sm:px-6 py-10 sm:py-0">
-          <p className="text-sm sm:text-lg md:text-xl text-white max-w-3xl mb-6 sm:mb-8 leading-relaxed drop-shadow">
-            A complete solution for managing student admissions, records, and
-            class organization. Here you can also view Teachers&apos; records,
-            while the Admin can see and manage both Students and Teachers&apos;
-            activities.
-          </p>
-          {user ? (
-            <a
-              href="#portals"
-              className="bg-white text-blue-700 font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-blue-50 transition-all hover:scale-105"
-            >
-              Go to Your Portal
-            </a>
-          ) : (
-            <div className="flex gap-3 flex-wrap justify-center">
-              <Link
-                href="/login"
-                className="bg-white text-blue-700 font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-blue-50 transition-all hover:scale-105"
-              >
-                Login
-              </Link>
-            </div>
-          )}
+          <TypewriterText
+            text="A complete solution for managing student admissions, records, and class organization. Here you can also view Teachers' records, while the Admin can see and manage both Students and Teachers' activities."
+            className="text-sm sm:text-lg md:text-xl text-white max-w-3xl leading-relaxed drop-shadow min-h-[6rem]"
+          />
         </div>
       </section>
 
@@ -182,24 +168,26 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Portals (Logged In users only) */}
-      {user && (
-        <section id="portals" className="bg-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      {/* Portals — Student Portal card is always public; staff cards appear
+          for logged-in users. */}
+      <section id="portals" className="bg-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <div className="inline-block bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-3">
-              Welcome, {user.name}
+              {user ? `Welcome, ${user.name}` : "Explore"}
             </div>
             <h2 className="text-3xl font-bold text-gray-800 mb-3">
-              Your Available Portals
+              {user ? "Your Available Portals" : "Student Portal"}
             </h2>
             <p className="text-gray-500 max-w-xl mx-auto">
-              {user.role === "admin"
-                ? "As an admin, you have access to all three portals."
-                : user.role === "teacher"
-                  ? "As a teacher, you can access student and teacher portals."
-                  : user.role === "editor"
-                    ? "As an editor, you can access student and teacher portals."
-                    : "As a student, you can access the student portal."}
+              {!user
+                ? "Browse all classes and view student details — no login required."
+                : user.role === "admin"
+                  ? "As an admin, you have access to all three portals."
+                  : user.role === "teacher"
+                    ? "As a teacher, you can access student and teacher portals."
+                    : user.role === "editor"
+                      ? "As an editor, you can access student and teacher portals."
+                      : "As a student, you can access the student portal."}
             </p>
           </div>
 
@@ -229,7 +217,6 @@ export default async function Home() {
             ))}
           </div>
         </section>
-      )}
     </div>
   );
 }
