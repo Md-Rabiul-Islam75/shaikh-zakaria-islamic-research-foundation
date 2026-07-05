@@ -122,6 +122,7 @@ export default function TeacherDetailsClient({
     if (imageFile) {
       const fd = new FormData();
       fd.append("file", imageFile);
+      fd.append("folder", "teachers");
       const uploadRes = await fetch("/api/upload", {
         method: "POST",
         body: fd,

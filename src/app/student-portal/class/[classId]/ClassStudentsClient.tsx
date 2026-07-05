@@ -495,6 +495,7 @@ export default function ClassStudentsClient({
     if (imageFile) {
       const fd = new FormData();
       fd.append("file", imageFile);
+      fd.append("folder", "students");
       const uploadRes = await fetch("/api/upload", {
         method: "POST",
         body: fd,
