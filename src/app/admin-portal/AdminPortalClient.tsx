@@ -35,6 +35,7 @@ const actionLabels: Record<string, { verb: string; color: string }> = {
   UPDATE_STUDENT: { verb: "updated student", color: "bg-amber-100 text-amber-700" },
   DELETE_STUDENT: { verb: "deleted student", color: "bg-red-100 text-red-700" },
   PROMOTE_STUDENTS: { verb: "promoted students", color: "bg-violet-100 text-violet-700" },
+  FAREWELL_STUDENTS: { verb: "graduated students", color: "bg-green-100 text-green-700" },
   CREATE_TEACHER: { verb: "added teacher", color: "bg-indigo-100 text-indigo-700" },
   UPDATE_TEACHER: { verb: "updated teacher", color: "bg-amber-100 text-amber-700" },
   DELETE_TEACHER: { verb: "deleted teacher", color: "bg-red-100 text-red-700" },
@@ -326,6 +327,7 @@ export default function AdminPortalClient({
               <option value="UPDATE_STUDENT">Update Student</option>
               <option value="DELETE_STUDENT">Delete Student</option>
               <option value="PROMOTE_STUDENTS">Promote Students</option>
+              <option value="FAREWELL_STUDENTS">Farewell / Graduate</option>
               <option value="CREATE_TEACHER">Create Teacher</option>
               <option value="UPDATE_TEACHER">Update Teacher</option>
               <option value="DELETE_TEACHER">Delete Teacher</option>

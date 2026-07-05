@@ -3,6 +3,8 @@ import { getCurrentUser, UserRole } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
 import { NextRequest, NextResponse } from "next/server";
 
+// Farewell = graduate students from the final class. Same privilege level as
+// promotion: only teachers and admins.
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) {
@@ -11,67 +13,61 @@ export async function POST(request: NextRequest) {
 
   if (user.role !== "teacher" && user.role !== "admin") {
     return NextResponse.json(
-      { error: "Only teachers and admins can promote students." },
+      { error: "Only teachers and admins can give farewell." },
       { status: 403 }
     );
   }
 
   const body = await request.json();
   const {
-    students,
+    studentIds,
     fromClassId,
-    fromSession,
-    toClassId,
-    toSession,
+    session,
   }: {
-    students: { id: string; newRoll: number }[];
+    studentIds: string[];
     fromClassId: string;
-    fromSession: number;
-    toClassId: string;
-    toSession: number;
+    session: number;
   } = body;
 
-  if (!students || students.length === 0) {
-    return NextResponse.json(
-      { error: "No students selected" },
-      { status: 400 }
-    );
+  if (!studentIds || studentIds.length === 0) {
+    return NextResponse.json({ error: "No students selected" }, { status: 400 });
   }
 
-  // Get "from" class name for history snapshot
   const fromClass = await prisma.class.findUnique({ where: { id: fromClassId } });
-  const toClass = await prisma.class.findUnique({ where: { id: toClassId } });
-  if (!fromClass || !toClass) {
+  if (!fromClass) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
   }
 
-  await prisma.$transaction(async (tx) => {
-    for (const s of students) {
-      const student = await tx.student.findUnique({ where: { id: s.id } });
-      if (!student) continue;
+  let graduated = 0;
 
-      // Save history snapshot with class name (not id)
+  await prisma.$transaction(async (tx) => {
+    for (const id of studentIds) {
+      const student = await tx.student.findUnique({ where: { id } });
+      if (!student || student.status === "graduated") continue;
+
+      // Snapshot the completed class into history
       await tx.classHistory.create({
         data: {
           studentId: student.id,
           classNameEn: fromClass.nameEn,
           classNameBn: fromClass.nameBn,
-          session: fromSession,
+          session,
           roll: student.roll,
           section: student.section,
-          result: "Promoted",
+          result: "Graduated",
         },
       });
 
       await tx.student.update({
-        where: { id: s.id },
+        where: { id: student.id },
         data: {
-          classId: toClassId,
-          admissionYear: toSession,
-          roll: s.newRoll,
-          section: null,
+          status: "graduated",
+          graduatedAt: new Date(),
+          graduatedSession: session,
         },
       });
+
+      graduated += 1;
     }
   });
 
@@ -79,19 +75,15 @@ export async function POST(request: NextRequest) {
     userId: user.id,
     userRole: user.role as UserRole,
     userName: user.name,
-    action: "PROMOTE_STUDENTS",
+    action: "FAREWELL_STUDENTS",
     targetType: "class",
-    targetId: toClassId,
-    targetName: `${fromClass.nameEn} → ${toClass.nameEn}`,
-    metadata: {
-      count: students.length,
-      fromSession,
-      toSession,
-    },
+    targetId: fromClassId,
+    targetName: fromClass.nameEn,
+    metadata: { count: graduated, session },
   });
 
   return NextResponse.json({
-    message: `${students.length} student(s) promoted from ${fromClass.nameEn} to ${toClass.nameEn}`,
-    promoted: students.length,
+    message: `${graduated} student(s) graduated from ${fromClass.nameEn}`,
+    graduated,
   });
 }

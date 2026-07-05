@@ -576,15 +576,9 @@ export default function TeacherPortalClient({
             </div>
             <h3 className="text-lg font-semibold text-slate-700 mb-1">No teachers yet</h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto">
-              Teachers who register will appear here. Share the registration
-              link and select the &quot;Teacher&quot; role during sign up.
+              Use the &quot;Add Teacher&quot; button above to create the first
+              teacher profile.
             </p>
-            <Link
-              href="/register"
-              className="inline-block mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
-            >
-              Go to Register
-            </Link>
           </div>
         ) : viewMode === "list" ? (
           // Professional List View — unique to Teacher Portal

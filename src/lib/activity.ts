@@ -9,6 +9,7 @@ export type ActivityAction =
   | "UPDATE_STUDENT"
   | "DELETE_STUDENT"
   | "PROMOTE_STUDENTS"
+  | "FAREWELL_STUDENTS"
   | "CREATE_TEACHER"
   | "UPDATE_TEACHER"
   | "DELETE_TEACHER"

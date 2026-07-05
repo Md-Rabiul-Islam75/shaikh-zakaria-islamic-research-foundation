@@ -7,14 +7,21 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const classId = searchParams.get("classId");
   const year = searchParams.get("year");
+  // Lifecycle filter. Defaults to "active" so class rosters never show
+  // graduated students; the Graduates list passes status=graduated.
+  const status = searchParams.get("status") ?? "active";
 
   const where: Record<string, unknown> = {};
   if (classId) where.classId = classId;
   if (year) where.admissionYear = parseInt(year);
+  if (status !== "all") where.status = status;
 
   const students = await prisma.student.findMany({
     where,
-    orderBy: { roll: "asc" },
+    orderBy:
+      status === "graduated"
+        ? { graduatedAt: "desc" }
+        : { roll: "asc" },
     include: { class: { select: { nameEn: true, nameBn: true } } },
   });
 

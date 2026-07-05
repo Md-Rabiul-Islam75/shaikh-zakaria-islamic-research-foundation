@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast, modal } from "@/lib/toast";
 
 type Role = "student" | "teacher" | "editor" | "admin";
@@ -13,16 +12,6 @@ const roles: {
   color: string;
   icon: React.ReactNode;
 }[] = [
-  {
-    value: "student",
-    label: "Student",
-    color: "from-emerald-500 to-emerald-600",
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-      </svg>
-    ),
-  },
   {
     value: "teacher",
     label: "Teacher",
@@ -60,7 +49,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({
     phone: "",
     password: "",
-    role: "student" as Role,
+    role: "teacher" as Role,
   });
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -129,7 +118,7 @@ export default function LoginPage() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Login As *
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {roles.map((r) => (
                 <button
                   key={r.value}
@@ -212,13 +201,6 @@ export default function LoginPage() {
             {submitting ? "Signing in..." : "Login"}
           </button>
         </form>
-
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
-            Register here
-          </Link>
-        </p>
       </div>
     </div>
   );

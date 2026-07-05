@@ -102,6 +102,12 @@ model Student {
   previousSchool     String?
   imageUrl           String?
   imagePublicId      String?
+  // Lifecycle: "active" while enrolled, "graduated" after farewell from the
+  // final class. Graduated students leave the active roster and appear in the
+  // Graduates/Alumni list. classId/admissionYear keep the class they finished.
+  status             String         @default("active") // active | graduated
+  graduatedAt        DateTime?
+  graduatedSession   Int?
   createdById        String?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
@@ -109,6 +115,7 @@ model Student {
   classHistory       ClassHistory[]
 
   @@index([classId, admissionYear])
+  @@index([status])
 }
 
 model ClassHistory {

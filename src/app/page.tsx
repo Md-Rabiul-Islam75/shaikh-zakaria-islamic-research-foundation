@@ -116,16 +116,18 @@ export default async function Home() {
   return (
     <div>
       {/* Banner Section */}
-      <section className="relative min-h-[360px] sm:h-[420px] bg-gradient-to-r from-blue-800 to-blue-600 overflow-hidden">
+      <section className="relative min-h-[400px] sm:h-[520px] lg:h-[580px] bg-gray-900 overflow-hidden">
         <Image
           src="/students_banner_unsplash.jpg"
           alt="Madrasa Banner"
           fill
-          className="object-cover opacity-30"
+          className="object-cover object-center"
           priority
         />
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-[360px] sm:h-full text-center px-4 sm:px-6 py-10 sm:py-0">
-          <p className="text-sm sm:text-lg md:text-xl text-blue-100 max-w-3xl mb-6 sm:mb-8 leading-relaxed">
+        {/* Neutral dark overlay for text readability (no blue tint) */}
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[400px] sm:h-full text-center px-4 sm:px-6 py-10 sm:py-0">
+          <p className="text-sm sm:text-lg md:text-xl text-white max-w-3xl mb-6 sm:mb-8 leading-relaxed drop-shadow">
             A complete solution for managing student admissions, records, and
             class organization. Here you can also view Teachers&apos; records,
             while the Admin can see and manage both Students and Teachers&apos;
@@ -145,12 +147,6 @@ export default async function Home() {
                 className="bg-white text-blue-700 font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-blue-50 transition-all hover:scale-105"
               >
                 Login
-              </Link>
-              <Link
-                href="/register"
-                className="bg-blue-800 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-blue-900 transition-all hover:scale-105 border border-blue-400"
-              >
-                Register
               </Link>
             </div>
           )}

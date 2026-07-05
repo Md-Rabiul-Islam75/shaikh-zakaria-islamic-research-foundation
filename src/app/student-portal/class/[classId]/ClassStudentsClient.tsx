@@ -7,6 +7,7 @@ import { toast, modal } from "@/lib/toast";
 import Swal from "sweetalert2";
 import { UserRole } from "@/lib/auth";
 import PdfExportModal, { PdfColumn } from "@/components/PdfExportModal";
+import { generateFarewellCertificates } from "@/lib/farewellCertificate";
 
 interface Student {
   id: string;
@@ -83,6 +84,12 @@ export default function ClassStudentsClient({
   const [promotionRolls, setPromotionRolls] = useState<Record<string, number>>({});
   const [promoting, setPromoting] = useState(false);
 
+  // Farewell (final class) state — the final class is the highest-order class.
+  const [isLastClass, setIsLastClass] = useState(false);
+  const [showFarewellModal, setShowFarewellModal] = useState(false);
+  const [selectedForFarewell, setSelectedForFarewell] = useState<Set<string>>(new Set());
+  const [farewelling, setFarewelling] = useState(false);
+
   const [form, setForm] = useState({
     studentNameEn: "",
     studentNameBn: "",
@@ -118,6 +125,20 @@ export default function ClassStudentsClient({
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  // Determine whether this class is the final (highest-order) class, so the
+  // Promote action becomes a Farewell action.
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("/api/classes");
+      if (!res.ok) return;
+      const classes: { id: string; order: number }[] = await res.json();
+      if (classes.length === 0) return;
+      const maxOrder = Math.max(...classes.map((c) => c.order));
+      const current = classes.find((c) => c.id === classInfo.id);
+      setIsLastClass(!!current && current.order === maxOrder);
+    })();
+  }, [classInfo.id]);
 
   const filteredStudents = students.filter((s) => {
     if (!searchQuery.trim()) return true;
@@ -350,6 +371,111 @@ export default function ClassStudentsClient({
     }
   };
 
+  const openFarewellModal = () => {
+    if (!canDelete) {
+      toast.warning("Not allowed", "Only teachers and admins can give farewell.");
+      return;
+    }
+    if (filteredStudents.length === 0) {
+      toast.info("No students", "There are no students to graduate.");
+      return;
+    }
+    setSelectedForFarewell(new Set(filteredStudents.map((s) => s.id)));
+    setShowFarewellModal(true);
+  };
+
+  const toggleFarewellSelection = (id: string) => {
+    setSelectedForFarewell((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleFarewellSelectAll = () => {
+    if (selectedForFarewell.size === filteredStudents.length) {
+      setSelectedForFarewell(new Set());
+    } else {
+      setSelectedForFarewell(new Set(filteredStudents.map((s) => s.id)));
+    }
+  };
+
+  const handleFarewell = async () => {
+    if (selectedForFarewell.size === 0) {
+      toast.warning("No selection", "Please select at least one student.");
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: `Give farewell to ${selectedForFarewell.size} student(s)?`,
+      html: `
+        <p class="text-gray-600 text-sm">
+          <strong>Class:</strong> ${classInfo.nameEn} (Session ${selectedYear})
+        </p>
+        <p class="text-xs text-gray-500 mt-3">
+          They will graduate, move to the Graduates list, and a certificate PDF
+          will be downloaded.
+        </p>
+      `,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Graduate",
+      confirmButtonColor: "#15803d",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!result.isConfirmed) return;
+
+    setFarewelling(true);
+
+    const graduates = filteredStudents.filter((s) =>
+      selectedForFarewell.has(s.id)
+    );
+
+    try {
+      const res = await fetch("/api/farewell", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentIds: Array.from(selectedForFarewell),
+          fromClassId: classInfo.id,
+          session: selectedYear,
+        }),
+      });
+
+      setFarewelling(false);
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success("Farewell complete", data.message);
+
+        // Download certificates for the graduated students
+        await generateFarewellCertificates(
+          graduates.map((s) => ({
+            studentNameEn: s.studentNameEn,
+            studentNameBn: s.studentNameBn,
+            fatherName: s.fatherName,
+            roll: s.roll,
+            classNameEn: classInfo.nameEn,
+            classNameBn: classInfo.nameBn,
+            session: selectedYear,
+          }))
+        );
+
+        setShowFarewellModal(false);
+        setSelectedForFarewell(new Set());
+        fetchStudents();
+      } else {
+        const data = await res.json();
+        toast.error("Farewell failed", data.error || "Please try again");
+      }
+    } catch {
+      setFarewelling(false);
+      toast.error("Network error", "Please check your connection.");
+    }
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -503,7 +629,7 @@ export default function ClassStudentsClient({
             </button>
           )}
 
-          {canDelete && (
+          {canDelete && !isLastClass && (
             <button
               onClick={openPromoteModal}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
@@ -512,6 +638,19 @@ export default function ClassStudentsClient({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
               Promote
+            </button>
+          )}
+
+          {canDelete && isLastClass && (
+            <button
+              onClick={openFarewellModal}
+              className="bg-green-700 hover:bg-green-800 text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm text-sm"
+              title="Final class — graduate students and issue certificates"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              </svg>
+              Farewell / Graduate
             </button>
           )}
 
@@ -1122,6 +1261,123 @@ export default function ClassStudentsClient({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                     Promote {selectedForPromotion.size} student{selectedForPromotion.size !== 1 ? "s" : ""}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Farewell Modal (final class only) */}
+      {showFarewellModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="bg-green-700 text-white px-6 py-5 rounded-t-2xl flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold">Farewell — Final Class</h2>
+                <p className="text-green-100 text-sm mt-1">
+                  Graduate from <strong>{classInfo.nameEn}</strong> (Session {selectedYear})
+                </p>
+              </div>
+              <button
+                onClick={() => setShowFarewellModal(false)}
+                className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Info */}
+            <div className="px-6 py-3 bg-green-50 border-b border-green-100 text-sm text-green-800">
+              Selected students will graduate, leave the active roster, appear in
+              the Graduates list, and get a downloadable certificate.
+            </div>
+
+            {/* Select All */}
+            <div className="px-6 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={
+                    selectedForFarewell.size === filteredStudents.length &&
+                    filteredStudents.length > 0
+                  }
+                  onChange={toggleFarewellSelectAll}
+                  className="w-4 h-4 text-green-700 rounded border-gray-300 focus:ring-green-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Select All</span>
+              </label>
+              <span className="text-sm text-gray-500">
+                {selectedForFarewell.size} of {filteredStudents.length} selected
+              </span>
+            </div>
+
+            {/* Student list */}
+            <div className="overflow-y-auto flex-1 px-6 py-3">
+              <div className="space-y-2">
+                {filteredStudents.map((student) => (
+                  <div
+                    key={student.id}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                      selectedForFarewell.has(student.id)
+                        ? "border-green-300 bg-green-50"
+                        : "border-gray-200 bg-white opacity-60"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedForFarewell.has(student.id)}
+                      onChange={() => toggleFarewellSelection(student.id)}
+                      className="w-4 h-4 text-green-700 rounded border-gray-300 focus:ring-green-600 shrink-0"
+                    />
+                    <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-white">
+                        {student.roll}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">
+                        {student.studentNameEn}
+                      </p>
+                      {student.studentNameBn && (
+                        <p className="text-xs text-gray-500 truncate">
+                          {student.studentNameBn}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer actions */}
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => setShowFarewellModal(false)}
+                className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFarewell}
+                disabled={farewelling || selectedForFarewell.size === 0}
+                className="px-6 py-2.5 bg-green-700 hover:bg-green-800 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+              >
+                {farewelling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    </svg>
+                    Graduate {selectedForFarewell.size} student{selectedForFarewell.size !== 1 ? "s" : ""}
                   </>
                 )}
               </button>
