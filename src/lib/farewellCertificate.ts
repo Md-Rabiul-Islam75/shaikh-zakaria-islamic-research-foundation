@@ -84,24 +84,20 @@ function drawCertificatePage(
   drawBorder(doc, w, h);
 
   // === Header ===
-  // Madrasa name — Bangla (prominent, maroon)
-  doc.setFont(BANGLA_FONT_NAME, "normal");
-  doc.setFontSize(24);
-  doc.setTextColor(MAROON.r, MAROON.g, MAROON.b);
-  renderBanglaWithZwnj(doc, o.schoolNameBn, cx, 66);
-
-  // Madrasa name — English
+  // Madrasa name — English only. jsPDF + Noto Sans Bengali can't reliably
+  // shape the conjuncts in the Bangla org name (রিসার্চ / সেন্টার), so the
+  // heading uses the English name to avoid broken glyphs.
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(INK.r, INK.g, INK.b);
-  doc.text(o.schoolNameEn, cx, 84, { align: "center" });
+  doc.setFontSize(21);
+  doc.setTextColor(MAROON.r, MAROON.g, MAROON.b);
+  doc.text(o.schoolNameEn, cx, 74, { align: "center" });
 
   // Address + contact
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(MUTED.r, MUTED.g, MUTED.b);
-  doc.text(o.addressLine, cx, 99, { align: "center" });
-  doc.text(o.contactLine, cx, 112, { align: "center" });
+  doc.text(o.addressLine, cx, 96, { align: "center" });
+  doc.text(o.contactLine, cx, 109, { align: "center" });
 
   // Header divider
   doc.setDrawColor(GREEN_LIGHT.r, GREEN_LIGHT.g, GREEN_LIGHT.b);
@@ -159,12 +155,25 @@ function drawCertificatePage(
     { align: "center" }
   );
   y += 20;
-  doc.text(
-    `for successfully completing the final class ${student.classNameEn} (Roll ${student.roll})`,
-    cx,
-    y,
-    { align: "center" }
-  );
+  // Class name rendered in bold (rest of the line normal), kept centered by
+  // measuring each segment and drawing them left-to-right.
+  const prefix = "for successfully completing the final class ";
+  const className = student.classNameEn;
+  const suffix = ` (Roll ${student.roll})`;
+  doc.setFont("helvetica", "normal");
+  const wPrefix = doc.getTextWidth(prefix);
+  const wSuffix = doc.getTextWidth(suffix);
+  doc.setFont("helvetica", "bold");
+  const wClass = doc.getTextWidth(className);
+  let lx = cx - (wPrefix + wClass + wSuffix) / 2;
+  doc.setFont("helvetica", "normal");
+  doc.text(prefix, lx, y);
+  lx += wPrefix;
+  doc.setFont("helvetica", "bold");
+  doc.text(className, lx, y);
+  lx += wClass;
+  doc.setFont("helvetica", "normal");
+  doc.text(suffix, lx, y);
   y += 20;
   doc.text(
     `in the session ${student.session} with the highest marks.`,
@@ -172,13 +181,6 @@ function drawCertificatePage(
     y,
     { align: "center" }
   );
-
-  // Class name — Bangla accent
-  y += 22;
-  doc.setFont(BANGLA_FONT_NAME, "normal");
-  doc.setFontSize(13);
-  doc.setTextColor(GREEN.r, GREEN.g, GREEN.b);
-  renderBanglaWithZwnj(doc, `সমাপ্ত শ্রেণি: ${student.classNameBn}`, cx, y);
 
   // Well-wishing line
   y += 26;
